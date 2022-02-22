@@ -7,7 +7,7 @@
 //     __attribute__((section(".import_table_data"))) = {0};
 
 // Put the entrypoint function in a predictable location.
-extern HRESULT entrypoint(void) __attribute__((section(".entry_point")));
+extern HRESULT DxtMain(void) __attribute__((section(".dxtmain")));
 
 // Command that will be handled by this processor.
 static const char kHandlerName[] = "bl2";
@@ -16,7 +16,7 @@ static HRESULT_API process_command(const char *command, char *response,
                                    DWORD response_len,
                                    struct CommandContext *ctx);
 
-HRESULT entrypoint(void) {
+HRESULT DxtMain(void) {
   return DmRegisterCommandProcessor(kHandlerName, process_command);
 }
 

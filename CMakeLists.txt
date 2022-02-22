@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(xbdm_gdb_bridge)
+project(dyndxt_loader)
 
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 

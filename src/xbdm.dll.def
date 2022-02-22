@@ -1,0 +1,10 @@
+; Import lib definition for xbdm.dll
+
+LIBRARY xbdm.dll
+
+EXPORTS
+    DmAllocatePool                          @1      NONAME
+    DmAllocatePoolWithTag                   @2      NONAME
+    DmFreePool                              @9      NONAME
+    DmRegisterCommandProcessor              @30     NONAME
+    DmResumeThread                          @35     NONAME

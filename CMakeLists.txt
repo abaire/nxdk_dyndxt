@@ -66,6 +66,9 @@ target_link_options(
         -Wl,-machine:i386
         -B ${NXDK_DIR}/bin
         -Wl,-entry:DxtMain
+        -Wl,-dynamicbase
+        -Wl,-fixed:no
+        -v
 )
 target_link_libraries(
         ${TARGET}

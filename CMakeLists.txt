@@ -59,13 +59,6 @@ target_include_directories(
         src
         ${NXDK_DIR}
 )
-
-target_link_options(
-        ${TARGET}
-        PUBLIC
-        -m32
-        -nostdlib
-)
 target_link_libraries(
         ${TARGET}
         xbdm_lib
@@ -74,3 +67,21 @@ target_link_libraries(
 # Force creation of the bootstrap objects, even though they are not actually
 # depended on by the dynamic_dxt_loader itself.
 add_dependencies(${TARGET} bootstrap_l1 bootstrap_l2_thunk)
+
+set(MRI_SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/merge.mri)
+file(
+        GENERATE
+        OUTPUT ${MRI_SCRIPT}
+        CONTENT
+        "create dynamic_dxt_loader.ar\naddlib $<TARGET_LINKER_FILE:${TARGET}>\naddlib ${NXDK_DIR}/lib/libpdclib.lib\nsave\nend\n"
+)
+
+add_custom_target(
+        dynamic_dxt_loader_flat
+        ALL
+        COMMAND
+            ar -M < ${MRI_SCRIPT}
+        COMMAND_EXPAND_LISTS
+        DEPENDS ${TARGET} ${MRI_SCRIPT}
+        VERBATIM
+)

@@ -5,6 +5,10 @@
 
 #define FACILITY_XBOX 0x2db
 #define XBOX_S_OK (FACILITY_XBOX << 16)
+#define XBOX_S_MULTILINE ((FACILITY_XBOX << 16) + 2)
+#define XBOX_S_BINARY ((FACILITY_XBOX << 16) + 3)
+#define XBOX_S_SEND_BINARY ((FACILITY_XBOX << 16) + 4)
+#define XBOX_S_DEDICATED ((FACILITY_XBOX << 16) + 5)
 
 #define HRESULT_API HRESULT __attribute__((stdcall))
 

@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.18)
 project(dyndxt_loader)
 
+set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
+set(CMAKE_SHARED_LIBRARY_SUFFIX ".dll")
+set(CMAKE_SHARED_LIBRARY_SUFFIX_C ".dll")
+set(CMAKE_SHARED_LIBRARY_SUFFIX_CXX ".dll")
+
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -49,26 +54,27 @@ set(TARGET dynamic_dxt_loader)
 
 add_library(
         ${TARGET}
-        src/dllmain.c
+        SHARED
+        src/dxtmain.c
         src/xbdm.h
 )
-
 target_include_directories(
         ${TARGET}
         PRIVATE
         src
         ${NXDK_DIR}
 )
-
 target_link_options(
         ${TARGET}
         PUBLIC
-        -m32
-        -nostdlib
+        -Wl,-machine:i386
+        -B ${NXDK_DIR}/bin
+        -Wl,-entry:DxtMain
 )
 target_link_libraries(
         ${TARGET}
-        xbdm_lib
+        PRIVATE
+        ${GENERATED_FILES_DIR}/xbdm.lib
 )
 
 # Force creation of the bootstrap objects, even though they are not actually

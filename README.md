@@ -30,6 +30,12 @@ The CMake target can be configured to use the toolchain from the nxdk:
 
     `NXDK_DIR=<absolute_path_to_nxdk>`
 
+# Building additional plugins
+
+The dyndxt_loader loader is intended to be used with DLLs that provide a
+`_DXTMain` entrypoint. The top level `CMakeLists.txt` builds the dyndxt_loader
+in this manner and can be used as a template.
+
 # Design
 
 *Technique inspired by https://github.com/XboxDev/xboxpy*

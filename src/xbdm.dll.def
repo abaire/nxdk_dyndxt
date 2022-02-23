@@ -3,8 +3,7 @@
 LIBRARY xbdm.dll
 
 EXPORTS
-    DmAllocatePool                          @1      NONAME
-    DmAllocatePoolWithTag                   @2      NONAME
-    DmFreePool                              @9      NONAME
-    DmRegisterCommandProcessor              @30     NONAME
-    DmResumeThread                          @35     NONAME
+    DmAllocatePoolWithTag@8                 @2      NONAME
+    DmFreePool@4                            @9      NONAME
+    DmRegisterCommandProcessor@8            @30     NONAME
+    DmResumeThread@4                        @35     NONAME

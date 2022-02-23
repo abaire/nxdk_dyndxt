@@ -1,5 +1,5 @@
-#include <windows.h>
 #include <string.h>
+#include <windows.h>
 
 #include "xbdm.h"
 
@@ -27,7 +27,6 @@ HRESULT DxtMain(void) {
 static HRESULT_API process_command(const char *command, char *response,
                                    DWORD response_len,
                                    struct CommandContext *ctx) {
-
   const char *subcommand = command + sizeof(kHandlerName);
 
   if (!strncmp(subcommand, "hello", 5)) {

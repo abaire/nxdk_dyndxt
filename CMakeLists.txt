@@ -17,8 +17,6 @@ include(FindPkgConfig)
 set(CMAKE_CXX_FLAGS_DEBUG "-g -Og")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-set(GENERATED_FILES_DIR "${CMAKE_BINARY_DIR}/generated")
-
 add_subdirectory(bootstrap)
 
 # Link libraries ------------------------------------
@@ -33,20 +31,18 @@ if (NOT CMAKE_DLLTOOL)
 ENDIF ()
 
 add_custom_command(
-        OUTPUT "${GENERATED_FILES_DIR}/xbdm.lib"
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/xbdm.lib
         COMMAND ${CMAKE_DLLTOOL}
             -m i386
             -d ${CMAKE_CURRENT_SOURCE_DIR}/src/xbdm.dll.def
-            -l "${GENERATED_FILES_DIR}/xbdm.lib"
+            -l "${CMAKE_CURRENT_BINARY_DIR}/xbdm.lib"
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/xbdm.dll.def
         VERBATIM
 )
 add_custom_target(
         generate_xbdm_lib
-        DEPENDS "${GENERATED_FILES_DIR}/xbdm.lib"
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/xbdm.lib
 )
-add_library(xbdm_lib INTERFACE)
-add_dependencies(xbdm_lib generate_xbdm_lib)
 
 # Loader executable ------------------------------------
 
@@ -74,9 +70,9 @@ target_link_options(
 target_link_libraries(
         ${TARGET}
         PRIVATE
-        ${GENERATED_FILES_DIR}/xbdm.lib
+        ${CMAKE_CURRENT_BINARY_DIR}/xbdm.lib
 )
 
 # Force creation of the bootstrap objects, even though they are not actually
 # depended on by the dynamic_dxt_loader itself.
-add_dependencies(${TARGET} bootstrap_l1 bootstrap_l2_thunk)
+add_dependencies(${TARGET} generate_xbdm_lib bootstrap_l1 bootstrap_l2_thunk)

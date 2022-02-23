@@ -3,7 +3,6 @@ project(dyndxt_loader)
 
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 
-enable_testing()
 set(CMAKE_CXX_STANDARD 17)
 include(CMakePushCheckState)
 set(_CMAKE_PROCESSING_LANGUAGE "C")
@@ -14,6 +13,8 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g -Og")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 set(GENERATED_FILES_DIR "${CMAKE_BINARY_DIR}/generated")
+
+add_subdirectory(bootstrap)
 
 # Link libraries ------------------------------------
 if (NOT CMAKE_DLLTOOL)
@@ -70,3 +71,6 @@ target_link_libraries(
         xbdm_lib
 )
 
+# Force creation of the bootstrap objects, even though they are not actually
+# depended on by the dynamic_dxt_loader itself.
+add_dependencies(${TARGET} bootstrap_l1 bootstrap_l2_thunk)

@@ -16,6 +16,15 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(GENERATED_FILES_DIR "${CMAKE_BINARY_DIR}/generated")
 
 # Link libraries ------------------------------------
+if (NOT CMAKE_DLLTOOL)
+    FIND_PROGRAM(CMAKE_DLLTOOL dlltool CMAKE_FIND_ROOT_PATH_BOTH)
+    if (NOT CMAKE_DLLTOOL)
+        FIND_PROGRAM(CMAKE_DLLTOOL llvm-dlltool CMAKE_FIND_ROOT_PATH_BOTH)
+    ENDIF ()
+    if (NOT CMAKE_DLLTOOL)
+        MESSAGE(FATAL_ERROR "Could not find dlltool command")
+    ENDIF ()
+ENDIF ()
 
 add_custom_command(
         OUTPUT "${GENERATED_FILES_DIR}/xbdm.lib"

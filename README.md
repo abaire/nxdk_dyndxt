@@ -71,7 +71,7 @@ At this point, loading is completed and the original `DmResumeThread` memory can
 be replaced.
 
 Interaction with the dyndxt_loader is accomplished via XBDM commands with the
-`bl2!` (boot loader 2) prefix.
+`ddxt!` (Dynamic DXT loader) prefix.
 
-E.g., "bl2!hello" will return a canned response if the loader has been installed
+E.g., "ddxt!hello" will return a canned response if the loader has been installed
 successfully.

@@ -4,7 +4,7 @@
 #include "xbdm.h"
 
 // Command that will be handled by this processor.
-static const char kHandlerName[] = "bl2";
+static const char kHandlerName[] = "ddxt";
 
 static HRESULT_API process_command(const char *command, char *response,
                                    DWORD response_len,

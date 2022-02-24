@@ -1,5 +1,5 @@
-#ifndef XBDM_GDB_BRIDGE_XBDM_H
-#define XBDM_GDB_BRIDGE_XBDM_H
+#ifndef DYDXT_XBDM_H
+#define DYDXT_XBDM_H
 
 #include <windows.h>
 
@@ -26,7 +26,8 @@
 #define XBOX_E_ACCESS_DENIED (0x80000000 | (FACILITY_XBOX << 16) | 14)
 #define XBOX_E_TYPE_INVALID (0x80000000 | (FACILITY_XBOX << 16) | 17)
 #define XBOX_E_DATA_NOT_AVAILABLE (0x80000000 | (FACILITY_XBOX << 16) | 18)
-#define XBOX_E_DEDICATED_CONNECTION_REQUIRED (0x80000000 | (FACILITY_XBOX << 16) | 22)
+#define XBOX_E_DEDICATED_CONNECTION_REQUIRED \
+  (0x80000000 | (FACILITY_XBOX << 16) | 22)
 
 #define HRESULT_API HRESULT __attribute__((stdcall))
 
@@ -68,4 +69,4 @@ typedef PVOID_API_PTR(DmAllocatePoolWithTag)(DWORD size, DWORD tag);
 // DmAllocatePoolWithTag.
 typedef VOID_API_PTR(DmFreePool)(void *block);
 
-#endif  // XBDM_GDB_BRIDGE_XBDM_H
+#endif  // DYDXT_XBDM_H

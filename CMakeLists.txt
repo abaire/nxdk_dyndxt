@@ -12,12 +12,25 @@ set(CMAKE_CXX_STANDARD 17)
 include(CMakePushCheckState)
 set(_CMAKE_PROCESSING_LANGUAGE "C")
 include(CheckSymbolExists)
+include (ExternalProject)
 include(FindPkgConfig)
 
 set(CMAKE_CXX_FLAGS_DEBUG "-g -Og")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 add_subdirectory(bootstrap)
+
+set(ddxt_bin_dir ${CMAKE_CURRENT_BINARY_DIR}/ddxt-bin)
+ExternalProject_Add(
+        dyndxt_loader_tests
+        PREFIX dyndxt_loader_tests
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/test
+        BINARY_DIR dyndxt_loader_tests
+        INSTALL_COMMAND ""
+        EXCLUDE_FROM_ALL FALSE
+        BUILD_ALWAYS TRUE
+)
+
 
 # Link libraries ------------------------------------
 if (NOT CMAKE_DLLTOOL)
@@ -51,8 +64,15 @@ set(TARGET dynamic_dxt_loader)
 add_library(
         ${TARGET}
         SHARED
+        src/command_processor_util.c
+        src/command_processor_util.h
         src/dxtmain.c
         src/xbdm.h
+)
+target_compile_options(
+        ${TARGET}
+        PRIVATE
+        -D DLLEXPORT
 )
 target_include_directories(
         ${TARGET}
@@ -79,3 +99,4 @@ target_link_libraries(
 # Force creation of the bootstrap objects, even though they are not actually
 # depended on by the dynamic_dxt_loader itself.
 add_dependencies(${TARGET} generate_xbdm_lib bootstrap_l1 bootstrap_l2_thunk)
+

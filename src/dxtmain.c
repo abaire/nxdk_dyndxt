@@ -30,7 +30,10 @@ static HRESULT_API process_command(const char *command, char *response,
     return handle_install(command, response, response_len, ctx);
   }
 
-  return XBOX_S_OK;
+  static const char error_message[] = "Unknown command ";
+  strncpy(response, error_message, response_len);
+  strncat(response, command, response_len - sizeof(error_message));
+  return XBOX_E_UNKNOWN_COMMAND;
 }
 
 static HRESULT_API handle_install(const char *command, char *response,

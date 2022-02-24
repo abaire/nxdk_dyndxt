@@ -67,7 +67,10 @@ add_library(
         src/command_processor_util.c
         src/command_processor_util.h
         src/dxtmain.c
+        src/response_util.c
+        src/response_util.h
         src/xbdm.h
+        src/xbdm_err.h
 )
 target_compile_options(
         ${TARGET}

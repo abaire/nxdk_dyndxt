@@ -40,6 +40,9 @@ void DECLSPEC CPDelete(CommandParameters *cp);
 int32_t DECLSPEC ParseCommandParameters(const char *params,
                                         CommandParameters *result);
 
+uint32_t DECLSPEC CPPrintError(int32_t parse_return_code, char *buffer,
+                               uint32_t buffer_len);
+
 bool DECLSPEC CPHasKey(const char *key, CommandParameters *cp);
 bool DECLSPEC CPGetString(const char *key, const char **result,
                           CommandParameters *cp);

@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "xbdm_err.h"
+
 static const char *FirstNonSpace(const char *input);
 static const char *KeyEnd(const char *input);
 static const char *ValueEnd(const char *input, bool *has_escaped_values);
@@ -162,6 +164,35 @@ int32_t ParseCommandParameters(const char *params, CommandParameters *result) {
   }
 
   return result->entries;
+}
+
+uint32_t CPPrintError(int32_t parse_return_code, char *buffer,
+                      uint32_t buffer_len) {
+  switch (parse_return_code) {
+    default:
+      strncpy(buffer, "UNKNOWN ERROR", buffer_len);
+      return XBOX_E_UNEXPECTED;
+
+    case PCP_ERR_INVALID_INPUT:
+      strncpy(buffer, "Invalid input", buffer_len);
+      return XBOX_E_FAIL;
+
+    case PCP_ERR_OUT_OF_MEMORY:
+      strncpy(buffer, "Out of memory", buffer_len);
+      return XBOX_E_CREATE_FILE_FAILED;
+
+    case PCP_ERR_INVALID_KEY:
+      strncpy(buffer, "Malformed key", buffer_len);
+      return XBOX_E_FAIL;
+
+    case PCP_ERR_INVALID_INPUT_UNTERMINATED_QUOTED_KEY:
+      strncpy(buffer, "Malformed key (unterminated quote)", buffer_len);
+      return XBOX_E_FAIL;
+
+    case PCP_ERR_INVALID_INPUT_UNTERMINATED_ESCAPE:
+      strncpy(buffer, "Malformed key (unterminated escape char)", buffer_len);
+      return XBOX_E_FAIL;
+  }
 }
 
 bool CPHasKey(const char *key, CommandParameters *cp) {

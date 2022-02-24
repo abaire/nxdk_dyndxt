@@ -119,6 +119,8 @@ install(
 install(
         FILES
         src/command_processor_util.h
+        src/xbdm.h
+        src/xbdm_err.h
         DESTINATION
         include
 )

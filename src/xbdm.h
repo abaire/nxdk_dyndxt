@@ -24,11 +24,11 @@ typedef HRESULT_API_PTR(ProcessorProc)(const char *command, char *response,
                                        struct CommandContext *ctx);
 
 // Function handler.
-typedef HRESULT_API_PTR(CommandHandlerFunc)(struct CommandContext *ctx,
-                                            char *response, DWORD response_len);
+typedef HRESULT_API_PTR(ContinuationProc)(struct CommandContext *ctx,
+                                          char *response, DWORD response_len);
 
 typedef struct CommandContext {
-  CommandHandlerFunc handler;
+  ContinuationProc handler;
   DWORD data_size;
   void *buffer;
   DWORD buffer_size;

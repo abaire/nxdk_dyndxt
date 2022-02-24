@@ -103,3 +103,22 @@ target_link_libraries(
 # depended on by the dynamic_dxt_loader itself.
 add_dependencies(${TARGET} generate_xbdm_lib bootstrap_l1 bootstrap_l2_thunk)
 
+
+install(
+        TARGETS
+        ${TARGET}
+        DESTINATION
+        lib
+)
+install(
+        FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/xbdm.lib
+        DESTINATION
+        lib
+)
+install(
+        FILES
+        src/command_processor_util.h
+        DESTINATION
+        include
+)

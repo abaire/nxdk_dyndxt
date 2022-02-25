@@ -82,11 +82,10 @@ static HRESULT_API HandleReserve(const char *command, char *response,
   return XBOX_S_OK;
 }
 
-static HRESULT_API ReceiveImageData(struct CommandContext *ctx,
-                                    char *response, DWORD response_len) {
+static HRESULT_API ReceiveImageData(struct CommandContext *ctx, char *response,
+                                    DWORD response_len) {
   return XBOX_E_UNEXPECTED;
 }
-
 
 static HRESULT_API HandleInstall(const char *command, char *response,
                                  DWORD response_len,
@@ -100,9 +99,9 @@ static HRESULT_API HandleInstall(const char *command, char *response,
   uint32_t base;
   bool base_found = CPGetUInt32("base", &base, &cp);
   uint32_t length;
-  bool length_found = CPGetUInt32("length", &base, &cp);
+  bool length_found = CPGetUInt32("length", &length, &cp);
   uint32_t dxt_main;
-  bool main_found = CPGetUInt32("entrypoint", &base, &cp);
+  bool main_found = CPGetUInt32("entrypoint", &dxt_main, &cp);
   CPDelete(&cp);
 
   if (!base_found) {
@@ -110,32 +109,39 @@ static HRESULT_API HandleInstall(const char *command, char *response,
                         response_len);
   }
   if (!length_found) {
-    return SetXBDMError(XBOX_E_FAIL, "Missing required 'length' param", response,
-                        response_len);
+    return SetXBDMError(XBOX_E_FAIL, "Missing required 'length' param",
+                        response, response_len);
   }
   if (!main_found) {
-    return SetXBDMError(XBOX_E_FAIL, "Missing required 'entrypoint' param", response,
-                        response_len);
+    return SetXBDMError(XBOX_E_FAIL, "Missing required 'entrypoint' param",
+                        response, response_len);
   }
   if (!base) {
-    return SetXBDMError(XBOX_E_FAIL, "Invalid 'base' param", response, response_len);
+    return SetXBDMError(XBOX_E_FAIL, "Invalid 'base' param", response,
+                        response_len);
   }
   if (!length) {
-    return SetXBDMError(XBOX_E_FAIL, "Invalid 'length' param", response, response_len);
+    return SetXBDMError(XBOX_E_FAIL, "Invalid 'length' param", response,
+                        response_len);
   }
-  if (!dxt_main || dxt_main < base) {
-    return SetXBDMError(XBOX_E_FAIL, "Invalid 'entrypoint' param", response, response_len);
+  if (dxt_main < base) {
+    return SetXBDMError(XBOX_E_FAIL, "Invalid 'entrypoint' param, < base",
+                        response, response_len);
+  }
+  if (dxt_main >= base + length) {
+    return SetXBDMError(XBOX_E_FAIL, "Invalid 'entrypoint' param, > image",
+                        response, response_len);
   }
 
-  DXTContext *dxt_context = (DXTContext*)malloc(sizeof(DXTContext));
+  DXTContext *dxt_context = (DXTContext *)malloc(sizeof(DXTContext));
   dxt_context->dxt_main = dxt_main;
   dxt_context->image_base = base;
   dxt_context->num_tls_callbacks = 0;
   dxt_context->tls_callbacks = NULL;
 
-  ctx->buffer = (void*)base;
+  ctx->buffer = (void *)base;
   ctx->buffer_size = length;
-  ctx->user_data = (void*)dxt_context;
+  ctx->user_data = (void *)dxt_context;
   ctx->data_size = 0;
   ctx->bytes_remaining = length;
   ctx->handler = ReceiveImageData;

@@ -399,4 +399,25 @@ BOOST_AUTO_TEST_CASE(get_uint32_test) {
   CPDelete(&cp);
 }
 
+BOOST_AUTO_TEST_CASE(realistic_test) {
+  CommandParameters cp;
+  ParseCommandParameters(
+      "ddxt!install base=0xb00ee000 length=0x5000 entrypoint=0xb00ef000", &cp);
+  BOOST_TEST(cp.entries == 4);
+
+  uint32_t result;
+  BOOST_TEST(CPGetUInt32("base", &result, &cp));
+  BOOST_TEST(result == 0xb00ee000);
+
+  BOOST_TEST(CPGetUInt32("length", &result, &cp));
+  BOOST_TEST(result == 0x5000);
+
+  BOOST_TEST(CPGetUInt32("entrypoint", &result, &cp));
+  BOOST_TEST(result == 0xb00ef000);
+
+  BOOST_TEST(CPHasKey("ddxt!install", &cp));
+
+  CPDelete(&cp);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

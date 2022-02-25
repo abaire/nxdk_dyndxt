@@ -112,6 +112,7 @@ install(
 )
 install(
         FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/libdynamic_dxt_loader.lib
         ${CMAKE_CURRENT_BINARY_DIR}/xbdm.lib
         DESTINATION
         lib

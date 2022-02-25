@@ -43,19 +43,34 @@ if (NOT CMAKE_DLLTOOL)
     ENDIF ()
 ENDIF ()
 
-add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/xbdm.lib
-        COMMAND
+function(make_import_lib target_name output def_file)
+    add_custom_command(
+            OUTPUT ${output}
+            COMMAND
             ${CMAKE_DLLTOOL}
             -m i386
-            -d ${CMAKE_CURRENT_SOURCE_DIR}/src/xbdm.dll.def
-            -l "${CMAKE_CURRENT_BINARY_DIR}/xbdm.lib"
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/xbdm.dll.def
-        VERBATIM
+            -d ${def_file}
+            -l ${output}
+            DEPENDS ${def_file}
+            VERBATIM
+    )
+    add_custom_target(
+            ${target_name}
+            DEPENDS
+            ${output}
+    )
+endfunction()
+
+make_import_lib(
+        xbdm_lib
+        ${CMAKE_CURRENT_BINARY_DIR}/xbdm.lib
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/xbdm.dll.def
 )
-add_custom_target(
-        generate_xbdm_lib
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/xbdm.lib
+
+make_import_lib(
+        dynamic_dxt_loader_lib
+        ${CMAKE_CURRENT_BINARY_DIR}/dynamic_dxt_loader.lib
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/dynamic_dxt_loader.dll.def
 )
 
 # Loader executable ------------------------------------
@@ -100,29 +115,24 @@ target_link_libraries(
         PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR}/xbdm.lib
 )
-
-# Force creation of the bootstrap objects, even though they are not actually
-# depended on by the dynamic_dxt_loader itself.
-add_dependencies(${TARGET} generate_xbdm_lib bootstrap_l1 bootstrap_l2_thunk)
-
-add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/dynamic_dxt_loader.lib
-        COMMAND
-            ${CMAKE_DLLTOOL}
-            -m i386
-            -d ${CMAKE_CURRENT_SOURCE_DIR}/src/dynamic_dxt_loader.dll.def
-            -l "${CMAKE_CURRENT_BINARY_DIR}/dynamic_dxt_loader.lib"
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/dynamic_dxt_loader.dll.def
-        VERBATIM
-)
-add_custom_target(
-        generate_dynamic_dxt_loader_lib
-        ALL
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/dynamic_dxt_loader.lib
+add_dependencies(
+        ${TARGET}
+        xbdm_lib
+        dynamic_dxt_loader_lib
+        bootstrap_l1
+        bootstrap_l2_thunk
 )
 
 install(
+        TARGETS
+        ${TARGET}
+        DESTINATION
+        lib
+)
+install(
         FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/bootstrap_l1.asm.obj
+        ${CMAKE_CURRENT_BINARY_DIR}/bootstrap_l2_thunk.asm.obj
         ${CMAKE_CURRENT_BINARY_DIR}/dynamic_dxt_loader.lib
         ${CMAKE_CURRENT_BINARY_DIR}/xbdm.lib
         DESTINATION

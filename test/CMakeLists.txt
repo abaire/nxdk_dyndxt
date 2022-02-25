@@ -24,15 +24,9 @@ add_executable(
         ../src/command_processor_util.c
         ../src/command_processor_util.h
 )
-target_compile_options(
-        command_processor_util_tests
-        PRIVATE
-        -D __NO_DLL_LINKAGE
-)
 target_include_directories(
         command_processor_util_tests
         PRIVATE ../src
-        PRIVATE test
 )
 target_link_libraries(
         command_processor_util_tests
@@ -40,3 +34,26 @@ target_link_libraries(
         ${Boost_LIBRARIES}
 )
 add_test(NAME command_processor_util_tests COMMAND command_processor_util_tests)
+
+
+# dll_loader_tests
+add_executable(
+        dll_loader_tests
+        dll_loader/test_main.cpp
+        ../dll_loader/dll_loader.c
+        ../dll_loader/dll_loader.h
+        third_party/nxdk/winapi/winnt.h
+        third_party/nxdk/xboxkrnl/xboxdef.h
+)
+target_include_directories(
+        dll_loader_tests
+        PRIVATE ../dll_loader
+        PRIVATE dll_loader
+        PUBLIC third_party/nxdk
+)
+target_link_libraries(
+        dll_loader_tests
+        LINK_PRIVATE
+        ${Boost_LIBRARIES}
+)
+add_test(NAME dll_loader_tests COMMAND dll_loader_tests)

@@ -16,7 +16,6 @@ typedef struct SendMethodAddressesContext {
   uint32_t next_method_index;
 } SendMethodAddressesContext;
 
-
 typedef HRESULT_API (*DxtMainProc)(void);
 typedef struct ReceiveImageDataContext {
   DxtMainProc dxt_main;
@@ -33,13 +32,11 @@ static union {
   ReceiveImageDataContext receive_image_data_context;
 } context_store;
 
-
 static HRESULT_API ProcessCommand(const char *command, char *response,
                                   DWORD response_len,
                                   struct CommandContext *ctx);
 static HRESULT_API HandleHello(const char *command, char *response,
-                               DWORD response_len,
-                               struct CommandContext *ctx);
+                               DWORD response_len, struct CommandContext *ctx);
 static HRESULT_API HandleReserve(const char *command, char *response,
                                  DWORD response_len,
                                  struct CommandContext *ctx);
@@ -47,8 +44,8 @@ static HRESULT_API HandleInstall(const char *command, char *response,
                                  DWORD response_len,
                                  struct CommandContext *ctx);
 
-static HRESULT_API SendMethodAddresses(struct CommandContext *ctx, char *response,
-                                       DWORD response_len);
+static HRESULT_API SendMethodAddresses(struct CommandContext *ctx,
+                                       char *response, DWORD response_len);
 
 HRESULT DxtMain(void) {
   return DmRegisterCommandProcessor(kHandlerName, ProcessCommand);
@@ -76,9 +73,9 @@ static HRESULT_API ProcessCommand(const char *command, char *response,
 }
 
 static HRESULT_API HandleHello(const char *command, char *response,
-                               DWORD response_len,
-                               struct CommandContext *ctx) {
-  SendMethodAddressesContext *response_context = &context_store.send_method_addresses_context;
+                               DWORD response_len, struct CommandContext *ctx) {
+  SendMethodAddressesContext *response_context =
+      &context_store.send_method_addresses_context;
   response_context->next_method_index = 0;
 
   ctx->user_data = response_context;
@@ -136,7 +133,9 @@ static HRESULT_API ReceiveImageData(struct CommandContext *ctx, char *response,
     // TODO: Call any TLS callbacks.
     process_context->dxt_main();
 
-    sprintf(response, "image_base=0x%X entrypoint=0x%X", (uint32_t)process_context->image_base, (uint32_t)process_context->dxt_main);
+    sprintf(response, "image_base=0x%X entrypoint=0x%X",
+            (uint32_t)process_context->image_base,
+            (uint32_t)process_context->dxt_main);
   }
 
   return XBOX_S_OK;
@@ -188,10 +187,11 @@ static HRESULT_API HandleInstall(const char *command, char *response,
                         response, response_len);
   }
 
-  ReceiveImageDataContext *process_context = &context_store.receive_image_data_context;
+  ReceiveImageDataContext *process_context =
+      &context_store.receive_image_data_context;
   process_context->dxt_main = (DxtMainProc)dxt_main;
-  process_context->image_base = base;
-  process_context->receive_pointer = base;
+  process_context->image_base = (void *)base;
+  process_context->receive_pointer = process_context->image_base;
   process_context->num_tls_callbacks = 0;
   process_context->tls_callbacks = NULL;
 
@@ -200,8 +200,8 @@ static HRESULT_API HandleInstall(const char *command, char *response,
   // filled before calling the handler, or if it's safe to update the buffer
   // pointer in the handler (e.g., simply advancing by data_size).
   // If the buffer is not set here, a default buffer within xbdm is used.
-//  ctx->buffer = (void *)base;
-//  ctx->buffer_size = length;
+  //  ctx->buffer = (void *)base;
+  //  ctx->buffer_size = length;
   ctx->user_data = process_context;
   ctx->bytes_remaining = length;
   ctx->handler = ReceiveImageData;
@@ -225,8 +225,8 @@ static const MethodExport kMethodExports[] = {
 };
 #define NUM_METHOD_EXPORTS (sizeof(kMethodExports) / sizeof(kMethodExports[0]))
 
-static HRESULT_API SendMethodAddresses(struct CommandContext *ctx, char *response,
-                                       DWORD response_len) {
+static HRESULT_API SendMethodAddresses(struct CommandContext *ctx,
+                                       char *response, DWORD response_len) {
   SendMethodAddressesContext *rctx = ctx->user_data;
   if (rctx->next_method_index >= NUM_METHOD_EXPORTS) {
     return XBOX_S_NO_MORE_DATA;
@@ -240,4 +240,3 @@ static HRESULT_API SendMethodAddresses(struct CommandContext *ctx, char *respons
   sprintf(ctx->buffer, "%s=0x%08X", export->name, export->address);
   return XBOX_S_OK;
 }
-

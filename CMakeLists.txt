@@ -80,6 +80,8 @@ set(TARGET dynamic_dxt_loader)
 add_library(
         ${TARGET}
         SHARED
+        dll_loader/dll_loader.c
+        dll_loader/dll_loader.h
         src/command_processor_util.c
         src/command_processor_util.h
         src/dxtmain.c
@@ -96,6 +98,7 @@ target_compile_options(
 target_include_directories(
         ${TARGET}
         PRIVATE
+        dll_loader
         src
         ${NXDK_DIR}
 )

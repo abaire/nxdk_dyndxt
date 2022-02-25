@@ -49,7 +49,7 @@ target_include_directories(
         dll_loader_tests
         PRIVATE ../dll_loader
         PRIVATE dll_loader
-        PUBLIC third_party/nxdk
+        PRIVATE third_party/nxdk
 )
 target_link_libraries(
         dll_loader_tests
@@ -57,3 +57,33 @@ target_link_libraries(
         ${Boost_LIBRARIES}
 )
 add_test(NAME dll_loader_tests COMMAND dll_loader_tests)
+
+
+# module_registry_tests
+add_executable(
+        module_registry_tests
+        module_registry/test_main.cpp
+        test_util/xbdm_stubs.cpp
+        test_util/xbdm_stubs.h
+        test_util/windows.h
+        ../src/module_registry.c
+        ../src/module_registry.h
+        ../src/util.c
+        ../src/util.h
+        ../src/xbdm.h
+        third_party/nxdk/winapi/winnt.h
+        third_party/nxdk/xboxkrnl/xboxdef.h
+)
+target_include_directories(
+        module_registry_tests
+        PRIVATE ../src
+        PRIVATE module_registry
+        PRIVATE test_util
+        PRIVATE third_party/nxdk
+)
+target_link_libraries(
+        module_registry_tests
+        LINK_PRIVATE
+        ${Boost_LIBRARIES}
+)
+add_test(NAME module_registry_tests COMMAND module_registry_tests)

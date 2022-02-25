@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -5,7 +6,9 @@
 #include <windows.h>
 
 #include "command_processor_util.h"
+#include "module_registry.h"
 #include "response_util.h"
+#include "util.h"
 #include "xbdm.h"
 
 // Command that will be handled by this processor.
@@ -13,7 +16,7 @@ static const char kHandlerName[] = "ddxt";
 #define TAG 'txdd'
 
 typedef struct SendMethodAddressesContext {
-  uint32_t next_method_index;
+  ModuleRegistryCursor cursor;
 } SendMethodAddressesContext;
 
 typedef HRESULT_API (*DxtMainProc)(void);
@@ -40,6 +43,10 @@ static HRESULT_API HandleHello(const char *command, char *response,
 static HRESULT_API HandleReserve(const char *command, char *response,
                                  DWORD response_len,
                                  struct CommandContext *ctx);
+static HRESULT_API HandleRegisterModuleExport(const char *command,
+                                              char *response,
+                                              DWORD response_len,
+                                              struct CommandContext *ctx);
 static HRESULT_API HandleInstall(const char *command, char *response,
                                  DWORD response_len,
                                  struct CommandContext *ctx);
@@ -47,7 +54,35 @@ static HRESULT_API HandleInstall(const char *command, char *response,
 static HRESULT_API SendMethodAddresses(struct CommandContext *ctx,
                                        char *response, DWORD response_len);
 
+static bool RegisterExport(const char *name, uint32_t ordinal,
+                           uint32_t address) {
+  // Keep in sync with name used in dynamic_dxt_loader.dll.def
+  static const char kDynamicDXTLoaderDLLName[] = "dynamic_dxt_loader.dll";
+
+  ModuleExport entry;
+  entry.method_name = PoolStrdup(name, TAG);
+  if (!entry.method_name) {
+    return false;
+  }
+  entry.ordinal = ordinal;
+  entry.address = address;
+  return MRRegisterMethod(kDynamicDXTLoaderDLLName, &entry);
+}
+
 HRESULT DxtMain(void) {
+  // Register methods exported by this DLL for use in DLLs to be loaded later.
+  RegisterExport("CPDelete@4", 2, (uint32_t)CPDelete);
+  RegisterExport("ParseCommandParameters@8", 3,
+                 (uint32_t)ParseCommandParameters);
+  RegisterExport("CPPrintError@12", 4, (uint32_t)CPPrintError);
+  RegisterExport("CPHasKey@8", 5, (uint32_t)CPHasKey);
+  RegisterExport("CPGetString@12", 6, (uint32_t)CPGetString);
+  RegisterExport("CPGetUInt32@12", 7, (uint32_t)CPGetUInt32);
+  RegisterExport("CPGetInt32@12", 8, (uint32_t)CPGetInt32);
+  RegisterExport("MRRegisterMethod@8", 9, (uint32_t)MRRegisterMethod);
+  RegisterExport("MRGetMethodByOrdinal@12", 10, (uint32_t)MRGetMethodByOrdinal);
+  RegisterExport("MRGetMethodByName@12", 11, (uint32_t)MRGetMethodByName);
+
   return DmRegisterCommandProcessor(kHandlerName, ProcessCommand);
 }
 
@@ -68,21 +103,43 @@ static HRESULT_API ProcessCommand(const char *command, char *response,
     return HandleInstall(command + 7, response, response_len, ctx);
   }
 
+  if (!strncmp(subcommand, "export", 6)) {
+    return HandleRegisterModuleExport(command + 6, response, response_len, ctx);
+  }
+
   return SetXBDMErrorWithSuffix(XBOX_E_UNKNOWN_COMMAND, "Unknown command ",
                                 command, response, response_len);
+}
+
+static HRESULT_API SendMethodAddresses(struct CommandContext *ctx,
+                                       char *response, DWORD response_len) {
+  SendMethodAddressesContext *rctx = ctx->user_data;
+
+  const char *module_name;
+  const ModuleExport *entry;
+
+  if (!MREnumerateRegistry(&module_name, &entry, &rctx->cursor)) {
+    return XBOX_S_NO_MORE_DATA;
+  }
+
+  static const char no_name[] = "";
+  const char *export_name = entry->method_name ? entry->method_name : no_name;
+  sprintf(ctx->buffer, "%s @ %d (%s) = 0x%08X", module_name, entry->ordinal,
+          export_name, entry->address);
+  return XBOX_S_OK;
 }
 
 static HRESULT_API HandleHello(const char *command, char *response,
                                DWORD response_len, struct CommandContext *ctx) {
   SendMethodAddressesContext *response_context =
       &context_store.send_method_addresses_context;
-  response_context->next_method_index = 0;
+  MREnumerateRegistryBegin(&response_context->cursor);
 
   ctx->user_data = response_context;
   ctx->handler = SendMethodAddresses;
 
   *response = 0;
-  strncat(response, "DDXT methods", response_len);
+  strncat(response, "Registered exports", response_len);
   return XBOX_S_MULTILINE;
 }
 
@@ -209,34 +266,74 @@ static HRESULT_API HandleInstall(const char *command, char *response,
   return XBOX_S_SEND_BINARY;
 }
 
-typedef struct MethodExport {
-  const char *name;
-  uint32_t address;
-} MethodExport;
-
-static const MethodExport kMethodExports[] = {
-    {"CPDelete", (uint32_t)CPDelete},
-    {"ParseCommandParameters", (uint32_t)ParseCommandParameters},
-    {"CPPrintError", (uint32_t)CPPrintError},
-    {"CPHasKey", (uint32_t)CPHasKey},
-    {"CPGetString", (uint32_t)CPGetString},
-    {"CPGetUInt32", (uint32_t)CPGetUInt32},
-    {"CPGetInt32", (uint32_t)CPGetInt32},
-};
-#define NUM_METHOD_EXPORTS (sizeof(kMethodExports) / sizeof(kMethodExports[0]))
-
-static HRESULT_API SendMethodAddresses(struct CommandContext *ctx,
-                                       char *response, DWORD response_len) {
-  SendMethodAddressesContext *rctx = ctx->user_data;
-  if (rctx->next_method_index >= NUM_METHOD_EXPORTS) {
-    return XBOX_S_NO_MORE_DATA;
+static HRESULT_API HandleRegisterModuleExport(const char *command,
+                                              char *response,
+                                              DWORD response_len,
+                                              struct CommandContext *ctx) {
+  CommandParameters cp;
+  int32_t result = ParseCommandParameters(command, &cp);
+  if (result < 0) {
+    return CPPrintError(result, response, response_len);
   }
 
-  const MethodExport *export = kMethodExports + rctx->next_method_index++;
-  if (ctx->buffer_size < strlen(export->name) + 16) {
-    return XBOX_E_ACCESS_DENIED;
+  ModuleExport entry;
+
+  const char *module_name;
+  bool name_found = CPGetString("module", &module_name, &cp);
+  const char *export_name;
+  bool export_name_found = CPGetString("name", &export_name, &cp);
+  bool ordinal_found = CPGetUInt32("ordinal", &entry.ordinal, &cp);
+  bool address_found = CPGetUInt32("addr", &entry.address, &cp);
+
+  if (!ordinal_found) {
+    CPDelete(&cp);
+    return SetXBDMError(XBOX_E_FAIL, "Missing required 'ordinal' param",
+                        response, response_len);
+  }
+  if (!address_found) {
+    CPDelete(&cp);
+    return SetXBDMError(XBOX_E_FAIL, "Missing required 'address' param",
+                        response, response_len);
   }
 
-  sprintf(ctx->buffer, "%s=0x%08X", export->name, export->address);
+  if (!name_found) {
+    CPDelete(&cp);
+    return SetXBDMError(XBOX_E_FAIL, "Missing required 'module' param",
+                        response, response_len);
+  }
+
+  char *module_name_saved = PoolStrdup(module_name, TAG);
+  if (!module_name_saved) {
+    CPDelete(&cp);
+    return SetXBDMError(XBOX_E_ACCESS_DENIED, "Out of memory", response,
+                        response_len);
+  }
+
+  entry.method_name = NULL;
+  if (export_name_found) {
+    entry.method_name = PoolStrdup(export_name, TAG);
+    if (!entry.method_name) {
+      DmFreePool(module_name_saved);
+      CPDelete(&cp);
+      return SetXBDMError(XBOX_E_ACCESS_DENIED, "Out of memory", response,
+                          response_len);
+    }
+  }
+
+  CPDelete(&cp);
+
+  if (!MRRegisterMethod(module_name_saved, &entry)) {
+    if (entry.method_name) {
+      DmFreePool(entry.method_name);
+    }
+
+    DmFreePool(module_name_saved);
+    return SetXBDMError(XBOX_E_FAIL, "Registration failed", response,
+                        response_len);
+  }
+
+  // Note: The module registry now owns entry.method_name.
+
+  DmFreePool(module_name_saved);
   return XBOX_S_OK;
 }

@@ -27,19 +27,15 @@ void CPDelete(CommandParameters *cp);
 // Parses an XBDM parameter string, populating the given result struct.
 // Returns the number of successfully parsed keys or a PCP_ERR_ define on
 // invalid input.
-int32_t ParseCommandParameters(const char *params,
-                                        CommandParameters *result);
+int32_t ParseCommandParameters(const char *params, CommandParameters *result);
 
 uint32_t CPPrintError(int32_t parse_return_code, char *buffer,
-                               uint32_t buffer_len);
+                      uint32_t buffer_len);
 
 bool CPHasKey(const char *key, CommandParameters *cp);
-bool CPGetString(const char *key, const char **result,
-                          CommandParameters *cp);
-bool CPGetUInt32(const char *key, uint32_t *result,
-                          CommandParameters *cp);
-bool CPGetInt32(const char *key, int32_t *result,
-                         CommandParameters *cp);
+bool CPGetString(const char *key, const char **result, CommandParameters *cp);
+bool CPGetUInt32(const char *key, uint32_t *result, CommandParameters *cp);
+bool CPGetInt32(const char *key, int32_t *result, CommandParameters *cp);
 
 #endif  // DYDXT_COMMAND_PROCESSOR_UTIL_H
 

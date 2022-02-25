@@ -5,12 +5,22 @@
 
 #include "xbdm_err.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Helper macros to hide the attribute verbosity
+#ifdef _WIN32
 #define HRESULT_API HRESULT __attribute__((stdcall))
 #define VOID_API void __attribute__((stdcall))
 #define PVOID_API void *__attribute__((stdcall))
-
-// Helper macros to hide the attribute verbosity
 #define X_API_PTR(ret, n) ret(__attribute__((stdcall)) * (n))
+#else
+#define HRESULT_API HRESULT
+#define VOID_API void
+#define PVOID_API void *
+#define X_API_PTR(ret, n) ret(*(n))
+#endif  // #ifdef _WIN32
 
 #define HRESULT_API_PTR(n) X_API_PTR(HRESULT, (n))
 #define PVOID_API_PTR(n) X_API_PTR(void *, (n))
@@ -46,5 +56,9 @@ extern PVOID_API DmAllocatePoolWithTag(DWORD size, DWORD tag);
 // Free the given block, which was previously allocated via
 // DmAllocatePoolWithTag.
 extern VOID_API DmFreePool(void *block);
+
+#ifdef __cplusplus
+};  // extern "C"
+#endif
 
 #endif  // DYDXT_XBDM_H

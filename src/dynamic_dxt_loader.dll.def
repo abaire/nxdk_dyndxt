@@ -1,5 +1,6 @@
 ; Import lib definition for dynamic_dxt_loader.dll
 
+; Keep in sync with name used in dxtmain.c
 LIBRARY dynamic_dxt_loader.dll
 
 EXPORTS
@@ -11,3 +12,6 @@ EXPORTS
     CPGetString                             @6      NONAME
     CPGetUInt32                             @7      NONAME
     CPGetInt32                              @8      NONAME
+    MRRegisterMethod                        @9      NONAME
+    MRGetMethodByOrdinal                    @10     NONAME
+    MRGetMethodByName                       @11     NONAME

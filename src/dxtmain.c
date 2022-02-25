@@ -11,22 +11,40 @@
 static const char kHandlerName[] = "ddxt";
 #define TAG 'txdd'
 
-typedef struct DXTContext {
+typedef struct SendMethodAddressesContext {
+  uint32_t next_method_index;
+} SendMethodAddressesContext;
+
+typedef struct ReceiveImageDataContext {
   uint32_t dxt_main;
   uint32_t image_base;
   uint32_t num_tls_callbacks;
   uint32_t *tls_callbacks;
-} DXTContext;
+} ReceiveImageDataContext;
+
+// Reserve memory space for context objects used by multiline and binary receive
+// responses.
+static union {
+  SendMethodAddressesContext send_method_addresses_context;
+  ReceiveImageDataContext receive_image_data_context;
+} context_store;
+
 
 static HRESULT_API ProcessCommand(const char *command, char *response,
                                   DWORD response_len,
                                   struct CommandContext *ctx);
+static HRESULT_API HandleHello(const char *command, char *response,
+                               DWORD response_len,
+                               struct CommandContext *ctx);
 static HRESULT_API HandleReserve(const char *command, char *response,
                                  DWORD response_len,
                                  struct CommandContext *ctx);
 static HRESULT_API HandleInstall(const char *command, char *response,
                                  DWORD response_len,
                                  struct CommandContext *ctx);
+
+static HRESULT_API SendMethodAddresses(struct CommandContext *ctx, char *response,
+                                       DWORD response_len);
 
 HRESULT DxtMain(void) {
   return DmRegisterCommandProcessor(kHandlerName, ProcessCommand);
@@ -38,8 +56,7 @@ static HRESULT_API ProcessCommand(const char *command, char *response,
   const char *subcommand = command + sizeof(kHandlerName);
 
   if (!strncmp(subcommand, "hello", 5)) {
-    strncpy(response, "Hi!", response_len);
-    return XBOX_S_OK;
+    return HandleHello(command, response, response_len, ctx);
   }
 
   if (!strncmp(subcommand, "reserve", 7)) {
@@ -52,6 +69,20 @@ static HRESULT_API ProcessCommand(const char *command, char *response,
 
   return SetXBDMErrorWithSuffix(XBOX_E_UNKNOWN_COMMAND, "Unknown command ",
                                 command, response, response_len);
+}
+
+static HRESULT_API HandleHello(const char *command, char *response,
+                               DWORD response_len,
+                               struct CommandContext *ctx) {
+  SendMethodAddressesContext *response_context = &context_store.send_method_addresses_context;
+  response_context->next_method_index = 0;
+
+  ctx->user_data = response_context;
+  ctx->handler = SendMethodAddresses;
+
+  *response = 0;
+  strncat(response, "DDXT methods", response_len);
+  return XBOX_S_MULTILINE;
 }
 
 static HRESULT_API HandleReserve(const char *command, char *response,
@@ -84,7 +115,20 @@ static HRESULT_API HandleReserve(const char *command, char *response,
 
 static HRESULT_API ReceiveImageData(struct CommandContext *ctx, char *response,
                                     DWORD response_len) {
-  return XBOX_E_UNEXPECTED;
+  ReceiveImageDataContext *process_context = ctx->user_data;
+//  process_context->dxt_main = dxt_main;
+//  process_context->image_base = base;
+//  process_context->num_tls_callbacks = 0;
+//  process_context->tls_callbacks = NULL;
+//
+//  ctx->buffer = (void *)base;
+//  ctx->buffer_size = length;
+//  ctx->user_data = process_context;
+//  ctx->data_size = 0;
+//  ctx->bytes_remaining = length;
+//  ctx->handler = ReceiveImageData;
+
+  return XBOX_S_OK;
 }
 
 static HRESULT_API HandleInstall(const char *command, char *response,
@@ -133,18 +177,52 @@ static HRESULT_API HandleInstall(const char *command, char *response,
                         response, response_len);
   }
 
-  DXTContext *dxt_context = (DXTContext *)malloc(sizeof(DXTContext));
-  dxt_context->dxt_main = dxt_main;
-  dxt_context->image_base = base;
-  dxt_context->num_tls_callbacks = 0;
-  dxt_context->tls_callbacks = NULL;
+  ReceiveImageDataContext *process_context = &context_store.receive_image_data_context;
+  process_context->dxt_main = dxt_main;
+  process_context->image_base = base;
+  process_context->num_tls_callbacks = 0;
+  process_context->tls_callbacks = NULL;
 
   ctx->buffer = (void *)base;
   ctx->buffer_size = length;
-  ctx->user_data = (void *)dxt_context;
+  ctx->user_data = process_context;
   ctx->data_size = 0;
   ctx->bytes_remaining = length;
   ctx->handler = ReceiveImageData;
 
   return XBOX_S_SEND_BINARY;
 }
+
+typedef struct MethodExport {
+  const char *name;
+  uint32_t address;
+} MethodExport;
+
+static const MethodExport kMethodExports[] = {
+    {"CPDelete", (uint32_t)CPDelete},
+    {"ParseCommandParameters", (uint32_t)ParseCommandParameters},
+    {"CPPrintError", (uint32_t)CPPrintError},
+    {"CPHasKey", (uint32_t)CPHasKey},
+    {"CPGetString", (uint32_t)CPGetString},
+    {"CPGetUInt32", (uint32_t)CPGetUInt32},
+    {"CPGetInt32", (uint32_t)CPGetInt32},
+    {"ReceiveImageData", (uint32_t)ReceiveImageData},
+};
+#define NUM_METHOD_EXPORTS (sizeof(kMethodExports) / sizeof(kMethodExports[0]))
+
+static HRESULT_API SendMethodAddresses(struct CommandContext *ctx, char *response,
+                                       DWORD response_len) {
+  SendMethodAddressesContext *rctx = ctx->user_data;
+  if (rctx->next_method_index >= NUM_METHOD_EXPORTS) {
+    return XBOX_S_NO_MORE_DATA;
+  }
+
+  const MethodExport *export = kMethodExports + rctx->next_method_index++;
+  if (ctx->buffer_size < strlen(export->name) + 16) {
+    return XBOX_E_ACCESS_DENIED;
+  }
+
+  sprintf(ctx->buffer, "%s=0x%08X", export->name, export->address);
+  return XBOX_S_OK;
+}
+

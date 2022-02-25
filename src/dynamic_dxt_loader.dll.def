@@ -1,0 +1,13 @@
+; Import lib definition for dynamic_dxt_loader.dll
+
+LIBRARY dynamic_dxt_loader.dll
+
+EXPORTS
+    DxtMain                                 @1      NONAME
+    CPDelete                                @2      NONAME
+    ParseCommandParameters                  @3      NONAME
+    CPPrintError                            @4      NONAME
+    CPHasKey                                @5      NONAME
+    CPGetString                             @6      NONAME
+    CPGetUInt32                             @7      NONAME
+    CPGetInt32                              @8      NONAME

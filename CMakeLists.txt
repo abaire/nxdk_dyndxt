@@ -45,7 +45,8 @@ ENDIF ()
 
 add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/xbdm.lib
-        COMMAND ${CMAKE_DLLTOOL}
+        COMMAND
+            ${CMAKE_DLLTOOL}
             -m i386
             -d ${CMAKE_CURRENT_SOURCE_DIR}/src/xbdm.dll.def
             -l "${CMAKE_CURRENT_BINARY_DIR}/xbdm.lib"
@@ -91,6 +92,7 @@ target_link_options(
         -Wl,-entry:DxtMain
         -Wl,-dynamicbase
         -Wl,-fixed:no
+        -Wl,-def:${CMAKE_CURRENT_SOURCE_DIR}/src/${TARGET}.dll.def
         -v
 )
 target_link_libraries(
@@ -103,16 +105,25 @@ target_link_libraries(
 # depended on by the dynamic_dxt_loader itself.
 add_dependencies(${TARGET} generate_xbdm_lib bootstrap_l1 bootstrap_l2_thunk)
 
+add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/dynamic_dxt_loader.lib
+        COMMAND
+            ${CMAKE_DLLTOOL}
+            -m i386
+            -d ${CMAKE_CURRENT_SOURCE_DIR}/src/dynamic_dxt_loader.dll.def
+            -l "${CMAKE_CURRENT_BINARY_DIR}/dynamic_dxt_loader.lib"
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/dynamic_dxt_loader.dll.def
+        VERBATIM
+)
+add_custom_target(
+        generate_dynamic_dxt_loader_lib
+        ALL
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/dynamic_dxt_loader.lib
+)
 
 install(
-        TARGETS
-        ${TARGET}
-        DESTINATION
-        lib
-)
-install(
         FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/libdynamic_dxt_loader.lib
+        ${CMAKE_CURRENT_BINARY_DIR}/dynamic_dxt_loader.lib
         ${CMAKE_CURRENT_BINARY_DIR}/xbdm.lib
         DESTINATION
         lib

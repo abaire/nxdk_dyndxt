@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <windows.h>
 
@@ -27,7 +28,7 @@ static HRESULT_API HandleInstall(const char *command, char *response,
                                  DWORD response_len,
                                  struct CommandContext *ctx);
 
-HRESULT __declspec(dllexport) DxtMain(void) {
+HRESULT DxtMain(void) {
   return DmRegisterCommandProcessor(kHandlerName, ProcessCommand);
 }
 

@@ -4,16 +4,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#ifdef DLLEXPORT
-#define DECLSPEC __declspec(dllexport)
-#else
-#ifdef __NO_DLL_LINKAGE
-#define DECLSPEC
-#else
-#define DECLSPEC __declspec(dllimport)
-#endif
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,23 +22,23 @@ typedef struct CommandParameters {
   char **values;
 } CommandParameters;
 
-void DECLSPEC CPDelete(CommandParameters *cp);
+void CPDelete(CommandParameters *cp);
 
 // Parses an XBDM parameter string, populating the given result struct.
 // Returns the number of successfully parsed keys or a PCP_ERR_ define on
 // invalid input.
-int32_t DECLSPEC ParseCommandParameters(const char *params,
+int32_t ParseCommandParameters(const char *params,
                                         CommandParameters *result);
 
-uint32_t DECLSPEC CPPrintError(int32_t parse_return_code, char *buffer,
+uint32_t CPPrintError(int32_t parse_return_code, char *buffer,
                                uint32_t buffer_len);
 
-bool DECLSPEC CPHasKey(const char *key, CommandParameters *cp);
-bool DECLSPEC CPGetString(const char *key, const char **result,
+bool CPHasKey(const char *key, CommandParameters *cp);
+bool CPGetString(const char *key, const char **result,
                           CommandParameters *cp);
-bool DECLSPEC CPGetUInt32(const char *key, uint32_t *result,
+bool CPGetUInt32(const char *key, uint32_t *result,
                           CommandParameters *cp);
-bool DECLSPEC CPGetInt32(const char *key, int32_t *result,
+bool CPGetInt32(const char *key, int32_t *result,
                          CommandParameters *cp);
 
 #endif  // DYDXT_COMMAND_PROCESSOR_UTIL_H

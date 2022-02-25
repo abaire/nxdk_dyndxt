@@ -34,7 +34,7 @@ typedef struct CommandContext {
   DWORD buffer_size;
   void *user_data;
   DWORD bytes_remaining;
-} CommandContext;
+} __attribute__((packed)) CommandContext;
 
 // Register a new processor for commands with the given prefix.
 extern HRESULT_API DmRegisterCommandProcessor(const char *prefix,

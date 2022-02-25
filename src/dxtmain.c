@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,9 +16,12 @@ typedef struct SendMethodAddressesContext {
   uint32_t next_method_index;
 } SendMethodAddressesContext;
 
+
+typedef HRESULT_API (*DxtMainProc)(void);
 typedef struct ReceiveImageDataContext {
-  uint32_t dxt_main;
-  uint32_t image_base;
+  DxtMainProc dxt_main;
+  void *image_base;
+  void *receive_pointer;
   uint32_t num_tls_callbacks;
   uint32_t *tls_callbacks;
 } ReceiveImageDataContext;
@@ -56,15 +60,15 @@ static HRESULT_API ProcessCommand(const char *command, char *response,
   const char *subcommand = command + sizeof(kHandlerName);
 
   if (!strncmp(subcommand, "hello", 5)) {
-    return HandleHello(command, response, response_len, ctx);
+    return HandleHello(command + 5, response, response_len, ctx);
   }
 
   if (!strncmp(subcommand, "reserve", 7)) {
-    return HandleReserve(command, response, response_len, ctx);
+    return HandleReserve(command + 7, response, response_len, ctx);
   }
 
   if (!strncmp(subcommand, "install", 7)) {
-    return HandleInstall(command, response, response_len, ctx);
+    return HandleInstall(command + 7, response, response_len, ctx);
   }
 
   return SetXBDMErrorWithSuffix(XBOX_E_UNKNOWN_COMMAND, "Unknown command ",
@@ -116,17 +120,24 @@ static HRESULT_API HandleReserve(const char *command, char *response,
 static HRESULT_API ReceiveImageData(struct CommandContext *ctx, char *response,
                                     DWORD response_len) {
   ReceiveImageDataContext *process_context = ctx->user_data;
-//  process_context->dxt_main = dxt_main;
-//  process_context->image_base = base;
-//  process_context->num_tls_callbacks = 0;
-//  process_context->tls_callbacks = NULL;
-//
-//  ctx->buffer = (void *)base;
-//  ctx->buffer_size = length;
-//  ctx->user_data = process_context;
-//  ctx->data_size = 0;
-//  ctx->bytes_remaining = length;
-//  ctx->handler = ReceiveImageData;
+
+  if (!ctx->data_size) {
+    // Unclear if this can ever happen. Presumably it'd indicate some sort of
+    // error and the image_base block should be freed.
+    return XBOX_E_UNEXPECTED;
+  }
+
+  memcpy(process_context->receive_pointer, ctx->buffer, ctx->data_size);
+  process_context->receive_pointer += ctx->data_size;
+
+  ctx->bytes_remaining -= ctx->data_size;
+
+  if (!ctx->bytes_remaining) {
+    // TODO: Call any TLS callbacks.
+    process_context->dxt_main();
+
+    sprintf(response, "image_base=0x%X entrypoint=0x%X", (uint32_t)process_context->image_base, (uint32_t)process_context->dxt_main);
+  }
 
   return XBOX_S_OK;
 }
@@ -178,15 +189,20 @@ static HRESULT_API HandleInstall(const char *command, char *response,
   }
 
   ReceiveImageDataContext *process_context = &context_store.receive_image_data_context;
-  process_context->dxt_main = dxt_main;
+  process_context->dxt_main = (DxtMainProc)dxt_main;
   process_context->image_base = base;
+  process_context->receive_pointer = base;
   process_context->num_tls_callbacks = 0;
   process_context->tls_callbacks = NULL;
 
-  ctx->buffer = (void *)base;
-  ctx->buffer_size = length;
+  // TODO: Investigate whether the buffer can be used directly.
+  // It's unclear if there is any guarantee that the buffer will be entirely
+  // filled before calling the handler, or if it's safe to update the buffer
+  // pointer in the handler (e.g., simply advancing by data_size).
+  // If the buffer is not set here, a default buffer within xbdm is used.
+//  ctx->buffer = (void *)base;
+//  ctx->buffer_size = length;
   ctx->user_data = process_context;
-  ctx->data_size = 0;
   ctx->bytes_remaining = length;
   ctx->handler = ReceiveImageData;
 
@@ -206,7 +222,6 @@ static const MethodExport kMethodExports[] = {
     {"CPGetString", (uint32_t)CPGetString},
     {"CPGetUInt32", (uint32_t)CPGetUInt32},
     {"CPGetInt32", (uint32_t)CPGetInt32},
-    {"ReceiveImageData", (uint32_t)ReceiveImageData},
 };
 #define NUM_METHOD_EXPORTS (sizeof(kMethodExports) / sizeof(kMethodExports[0]))
 

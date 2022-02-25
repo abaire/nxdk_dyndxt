@@ -238,7 +238,7 @@ bool CPGetUInt32(const char *key, uint32_t *result, CommandParameters *cp) {
   }
 
   const char *end;
-  *result = strtol(string_value, (char **)&end, 0);
+  *result = strtoul(string_value, (char **)&end, 0);
   if (end == string_value) {
     return false;
   }

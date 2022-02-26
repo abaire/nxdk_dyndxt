@@ -8,6 +8,12 @@
 extern "C" {
 #endif
 
+#ifdef _WIN32
+#define CP_API __attribute__((stdcall))
+#else
+#define CP_API
+#endif  // #ifdef _WIN32
+
 #define PCP_ERR_INVALID_INPUT -1
 #define PCP_ERR_OUT_OF_MEMORY -2
 #define PCP_ERR_INVALID_KEY -10
@@ -22,23 +28,26 @@ typedef struct CommandParameters {
   char **values;
 } CommandParameters;
 
-void CPDelete(CommandParameters *cp);
+void CP_API CPDelete(CommandParameters *cp);
 
 // Parses an XBDM parameter string, populating the given result struct.
 // Returns the number of successfully parsed keys or a PCP_ERR_ define on
 // invalid input.
-int32_t ParseCommandParameters(const char *params, CommandParameters *result);
+int32_t CP_API ParseCommandParameters(const char *params,
+                                      CommandParameters *result);
 
-uint32_t CPPrintError(int32_t parse_return_code, char *buffer,
-                      uint32_t buffer_len);
+uint32_t CP_API CPPrintError(int32_t parse_return_code, char *buffer,
+                             uint32_t buffer_len);
 
-bool CPHasKey(const char *key, CommandParameters *cp);
-bool CPGetString(const char *key, const char **result, CommandParameters *cp);
-bool CPGetUInt32(const char *key, uint32_t *result, CommandParameters *cp);
-bool CPGetInt32(const char *key, int32_t *result, CommandParameters *cp);
-
-#endif  // DYDXT_COMMAND_PROCESSOR_UTIL_H
+bool CP_API CPHasKey(const char *key, CommandParameters *cp);
+bool CP_API CPGetString(const char *key, const char **result,
+                        CommandParameters *cp);
+bool CP_API CPGetUInt32(const char *key, uint32_t *result,
+                        CommandParameters *cp);
+bool CP_API CPGetInt32(const char *key, int32_t *result, CommandParameters *cp);
 
 #ifdef __cplusplus
 };  // exern "C"
 #endif
+
+#endif  // DYDXT_COMMAND_PROCESSOR_UTIL_H

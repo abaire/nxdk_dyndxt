@@ -1,13 +1,14 @@
 #include "module_registry.h"
 
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "util.h"
 #include "xbdm.h"
 
-// ddxt module registry
-#define TAG 'rmxd'
+// 'dxmr' - ddxt module registry
+static const uint32_t kTag = 0x64786D72;
 
 struct ExportNode;
 typedef struct ExportNode {
@@ -30,8 +31,8 @@ static bool AppendExport(ModuleExportTable *table,
 static bool AppendExportTable(const char *module_name,
                               const ModuleExport *module_export);
 
-bool MRRegisterMethod(const char *module_name,
-                      const ModuleExport *module_export) {
+bool MR_API MRRegisterMethod(const char *module_name,
+                             const ModuleExport *module_export) {
   ModuleExportTable *e = export_table;
   while (e) {
     if (!strcmp(e->module_name, module_name)) {
@@ -43,8 +44,8 @@ bool MRRegisterMethod(const char *module_name,
   return AppendExportTable(module_name, module_export);
 }
 
-bool MRGetMethodByOrdinal(const char *module_name, uint32_t ordinal,
-                          uint32_t *result) {
+bool MR_API MRGetMethodByOrdinal(const char *module_name, uint32_t ordinal,
+                                 uint32_t *result) {
   *result = 0;
 
   ModuleExportTable *table = export_table;
@@ -67,8 +68,8 @@ bool MRGetMethodByOrdinal(const char *module_name, uint32_t ordinal,
   return true;
 }
 
-bool MRGetMethodByName(const char *module_name, const char *name,
-                       uint32_t *result) {
+bool MR_API MRGetMethodByName(const char *module_name, const char *name,
+                              uint32_t *result) {
   *result = 0;
 
   ModuleExportTable *table = export_table;
@@ -91,7 +92,7 @@ bool MRGetMethodByName(const char *module_name, const char *name,
   return true;
 }
 
-uint32_t MRGetNumRegisteredModules() {
+uint32_t MR_API MRGetNumRegisteredModules(void) {
   uint32_t ret = 0;
   ModuleExportTable *table = export_table;
   while (table) {
@@ -101,7 +102,7 @@ uint32_t MRGetNumRegisteredModules() {
   return ret;
 }
 
-uint32_t MRGetTotalNumExports() {
+uint32_t MR_API MRGetTotalNumExports(void) {
   uint32_t ret = 0;
 
   ModuleExportTable *table = export_table;
@@ -117,14 +118,14 @@ uint32_t MRGetTotalNumExports() {
   return ret;
 }
 
-void MREnumerateRegistryBegin(ModuleRegistryCursor *cursor) {
+void MR_API MREnumerateRegistryBegin(ModuleRegistryCursor *cursor) {
   cursor->module_ = export_table;
   cursor->export_ = export_table->exports;
 }
 
-bool MREnumerateRegistry(const char **module_name,
-                         const ModuleExport **module_export,
-                         ModuleRegistryCursor *cursor) {
+bool MR_API MREnumerateRegistry(const char **module_name,
+                                const ModuleExport **module_export,
+                                ModuleRegistryCursor *cursor) {
   if (!cursor->module_ || !cursor->export_) {
     return false;
   }
@@ -148,7 +149,7 @@ bool MREnumerateRegistry(const char **module_name,
   return true;
 }
 
-void MRResetRegistry(void) {
+void MR_API MRResetRegistry(void) {
   ModuleExportTable *table = export_table;
   while (table) {
     ExportNode *node = table->exports;
@@ -168,7 +169,7 @@ void MRResetRegistry(void) {
 }
 
 static bool SetExportEntry(ExportNode **n, const ModuleExport *module_export) {
-  *n = (ExportNode *)DmAllocatePoolWithTag(sizeof(**n), TAG);
+  *n = (ExportNode *)DmAllocatePoolWithTag(sizeof(**n), kTag);
   if (!n) {
     return false;
   }
@@ -203,12 +204,12 @@ static bool AppendExport(ModuleExportTable *table,
 
 static bool SetExportTableEntry(ModuleExportTable **dest,
                                 const char *module_name) {
-  *dest = (ModuleExportTable *)DmAllocatePoolWithTag(sizeof(**dest), TAG);
+  *dest = (ModuleExportTable *)DmAllocatePoolWithTag(sizeof(**dest), kTag);
   if (!*dest) {
     return false;
   }
   (*dest)->next = NULL;
-  (*dest)->module_name = PoolStrdup(module_name, TAG);
+  (*dest)->module_name = PoolStrdup(module_name, kTag);
   if (!(*dest)->module_name) {
     DmFreePool(*dest);
     *dest = NULL;

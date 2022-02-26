@@ -84,6 +84,10 @@ bool DLLLoad(DLLContext *ctx) {
     return false;
   }
 
+  ctx->output.entrypoint =
+      ctx->output.header.OptionalHeader.ImageBase +
+      ctx->output.header.OptionalHeader.AddressOfEntryPoint;
+
   return true;
 }
 

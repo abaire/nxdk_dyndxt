@@ -10,7 +10,7 @@ static const char *FirstNonSpace(const char *input);
 static const char *KeyEnd(const char *input);
 static const char *ValueEnd(const char *input, bool *has_escaped_values);
 
-void CPDelete(CommandParameters *cp) {
+void CP_API CPDelete(CommandParameters *cp) {
   for (int i = 0; i < cp->entries; ++i) {
     if (cp->keys && cp->keys[i]) {
       free(cp->keys[i]);
@@ -101,7 +101,8 @@ static int32_t CommandParametersAppend(
   return 0;
 }
 
-int32_t ParseCommandParameters(const char *params, CommandParameters *result) {
+int32_t CP_API ParseCommandParameters(const char *params,
+                                      CommandParameters *result) {
   if (!result) {
     return PCP_ERR_INVALID_INPUT;
   }
@@ -166,8 +167,8 @@ int32_t ParseCommandParameters(const char *params, CommandParameters *result) {
   return result->entries;
 }
 
-uint32_t CPPrintError(int32_t parse_return_code, char *buffer,
-                      uint32_t buffer_len) {
+uint32_t CP_API CPPrintError(int32_t parse_return_code, char *buffer,
+                             uint32_t buffer_len) {
   switch (parse_return_code) {
     default:
       strncpy(buffer, "UNKNOWN ERROR", buffer_len);
@@ -195,7 +196,7 @@ uint32_t CPPrintError(int32_t parse_return_code, char *buffer,
   }
 }
 
-bool CPHasKey(const char *key, CommandParameters *cp) {
+bool CP_API CPHasKey(const char *key, CommandParameters *cp) {
   if (!cp || !key) {
     return false;
   }
@@ -207,7 +208,8 @@ bool CPHasKey(const char *key, CommandParameters *cp) {
   return false;
 }
 
-bool CPGetString(const char *key, const char **result, CommandParameters *cp) {
+bool CP_API CPGetString(const char *key, const char **result,
+                        CommandParameters *cp) {
   if (!result) {
     return false;
   }
@@ -226,7 +228,8 @@ bool CPGetString(const char *key, const char **result, CommandParameters *cp) {
   return false;
 }
 
-bool CPGetUInt32(const char *key, uint32_t *result, CommandParameters *cp) {
+bool CP_API CPGetUInt32(const char *key, uint32_t *result,
+                        CommandParameters *cp) {
   if (!result) {
     return false;
   }
@@ -252,7 +255,8 @@ bool CPGetUInt32(const char *key, uint32_t *result, CommandParameters *cp) {
   return true;
 }
 
-bool CPGetInt32(const char *key, int32_t *result, CommandParameters *cp) {
+bool CP_API CPGetInt32(const char *key, int32_t *result,
+                       CommandParameters *cp) {
   if (!result) {
     return false;
   }

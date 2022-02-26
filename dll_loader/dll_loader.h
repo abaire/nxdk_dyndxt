@@ -10,52 +10,58 @@
 extern "C" {
 #endif
 
+#ifdef _WIN32
+#define DLL_LOADER_API __attribute__((stdcall))
+#else
+#define DLL_LOADER_API
+#endif  // #ifdef _WIN32
+
 typedef enum DLLLoaderContext {
   DLLL_NOT_PARSED = 0,
-  DLLL_DOS_HEADER,
-  DLLL_NT_HEADER,
-  DLLL_NT_HEADER_SECTION_TABLE,
-  DLLL_LOAD_IMAGE,
-  DLLL_LOAD_SECTION,
-  DLLL_RESOLVE_IMPORTS,
-  DLLL_RELOCATE,
-  DLLL_INVOKE_TLS_CALLBACKS,
+  DLLL_DOS_HEADER = 1,
+  DLLL_NT_HEADER = 2,
+  DLLL_NT_HEADER_SECTION_TABLE = 3,
+  DLLL_LOAD_IMAGE = 4,
+  DLLL_LOAD_SECTION = 5,
+  DLLL_RESOLVE_IMPORTS = 6,
+  DLLL_RELOCATE = 7,
+  DLLL_INVOKE_TLS_CALLBACKS = 8,
 } DLLLoaderContext;
 
 typedef enum DLLLoaderStatus {
   DLLL_OK = 0,
 
   // A general error occurred.
-  DLLL_ERROR,
+  DLLL_ERROR = 1,
 
   // An attempt was made to read beyond the size of the raw data, likely
   // indicating that the data is invalid.
-  DLLL_FILE_TOO_SMALL,
+  DLLL_FILE_TOO_SMALL = 2,
 
   // A signature in the raw data did not match the expected value, likely
   // indicating that the data is invalid.
-  DLLL_INVALID_SIGNATURE,
+  DLLL_INVALID_SIGNATURE = 3,
 
   // The Machine target is not i386.
-  DLLL_WRONG_MACHINE_TYPE,
+  DLLL_WRONG_MACHINE_TYPE = 4,
 
   // The DLL was not built with a dynamic base address.
-  DLLL_FIXED_BASE,
+  DLLL_FIXED_BASE = 5,
 
   // Memory allocation failed.
-  DLLL_OUT_OF_MEMORY,
+  DLLL_OUT_OF_MEMORY = 6,
 
   // One of the imports uses DLL forwarding.
-  DLLL_DLL_FORWARDING_NOT_SUPPORTED,
+  DLLL_DLL_FORWARDING_NOT_SUPPORTED = 7,
 
   // An import could not be resolved to a function address.
-  DLLL_UNRESOLVED_IMPORT,
+  DLLL_UNRESOLVED_IMPORT = 8,
 
   // No relocation data is available in the DLL.
-  DLLL_NO_RELOCATION_DATA,
+  DLLL_NO_RELOCATION_DATA = 9,
 
   // A relocation entry used an unimplemented type.
-  DLLL_UNSUPPORTED_RELOCATION_TYPE,
+  DLLL_UNSUPPORTED_RELOCATION_TYPE = 10,
 } DLLLoaderStatus;
 
 // The caller is responsible for setting up and cleaning up these values.
@@ -66,26 +72,28 @@ typedef struct DLLLoaderInput {
   uint32_t raw_data_size;
 
   // Pointer to a method used to allocate memory.
-  void *(*alloc)(size_t size);
+  void *(DLL_LOADER_API *alloc)(size_t size);
 
   // Pointer to a method used to free memory.
-  void (*free)(void *ptr);
+  void(DLL_LOADER_API *free)(void *ptr);
 
   // Pointer to a method used to look up the address of a function by ordinal.
   // `image` - the name of the image (e.g., "xbdm.dll")
   // `ordinal` - the export ordinal number
   // `result` - [OUT] set to the address of the requested function
   //  Returns true if the lookup was successful, false if not.
-  bool (*resolve_import_by_ordinal)(const char *image, uint32_t ordinal,
-                                    uint32_t *result);
+  bool(DLL_LOADER_API *resolve_import_by_ordinal)(const char *image,
+                                                  uint32_t ordinal,
+                                                  uint32_t *result);
 
   // Pointer to a method used to look up the address of a function by name.
   // `image` - the name of the image (e.g., "xbdm.dll")
   // `name` - the name of the export (e.g., "DmFreePool@4")
   // `result` - [OUT] set to the address of the requested function
   //  Returns true if the lookup was successful, false if not.
-  bool (*resolve_import_by_name)(const char *image, const char *name,
-                                 uint32_t *result);
+  bool(DLL_LOADER_API *resolve_import_by_name)(const char *image,
+                                               const char *name,
+                                               uint32_t *result);
 } DLLLoaderInput;
 
 typedef struct DLLLoaderOutput {

@@ -103,7 +103,7 @@ typedef struct DLLLoaderOutput {
   IMAGE_SECTION_HEADER *section_headers;
 
   // The loaded DLL image.
-  void *image;
+  uint8_t *image;
 
   // The rebased entrypoint of the DLL.
   hwaddress_t entrypoint;

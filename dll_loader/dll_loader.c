@@ -265,7 +265,7 @@ static bool DLLResolveImports(DLLContext *ctx) {
 
   // TODO: Prevent reads beyond end of table.
   for (; descriptor->Name; ++descriptor) {
-    const char *image_name = ctx->output.image + descriptor->Name;
+    const char *image_name = (const char *)ctx->output.image + descriptor->Name;
 
     if (descriptor->ForwarderChain) {
       SET_ERROR_STATUS(ctx, DLLL_DLL_FORWARDING_NOT_SUPPORTED);

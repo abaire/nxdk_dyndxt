@@ -4,6 +4,7 @@
 
 #include "dll_loader.h"
 #include "golden_dll.h"
+#include "relocated_B00D7000.h"
 
 static bool ResolveImportByOrdinalAlwaysFail(const char *, uint32_t,
                                              uint32_t *);
@@ -58,8 +59,8 @@ BOOST_AUTO_TEST_CASE(nop_relocation_test) {
 
   BOOST_TEST(DLLLoad(&ctx));
 
-  uint32_t base = (uint32_t)(intptr_t)ctx.output.image;
-  void *entrypoint = ctx.output.entrypoint;
+  hwaddress_t base = (uint32_t)(intptr_t)ctx.output.image;
+  hwaddress_t entrypoint = ctx.output.entrypoint;
 
   DLLRelocate(&ctx, base);
 
@@ -82,8 +83,8 @@ BOOST_AUTO_TEST_CASE(positive_relocation_test) {
 
   BOOST_TEST(DLLLoad(&ctx));
 
-  uint32_t base = (uint32_t)(intptr_t)ctx.output.image;
-  uint32_t entrypoint = (uint32_t)(intptr_t)ctx.output.entrypoint;
+  hwaddress_t base = (hwaddress_t)(intptr_t)ctx.output.image;
+  hwaddress_t entrypoint = ctx.output.entrypoint;
 
   DLLRelocate(&ctx, base + 0x500);
 
@@ -106,8 +107,8 @@ BOOST_AUTO_TEST_CASE(negative_relocation_test) {
 
   BOOST_TEST(DLLLoad(&ctx));
 
-  uint32_t base = (uint32_t)(intptr_t)ctx.output.image;
-  uint32_t entrypoint = (uint32_t)(intptr_t)ctx.output.entrypoint;
+  hwaddress_t base = (hwaddress_t)(intptr_t)ctx.output.image;
+  hwaddress_t entrypoint = ctx.output.entrypoint;
 
   DLLRelocate(&ctx, base - 0x500);
 
@@ -116,6 +117,38 @@ BOOST_AUTO_TEST_CASE(negative_relocation_test) {
   DLLFreeContext(&ctx, false);
 }
 
+BOOST_AUTO_TEST_CASE(relocation_test) {
+  DLLContext ctx;
+
+  memset(&ctx, 0, sizeof(ctx));
+
+  ctx.input.raw_data = kDynDXTLoader;
+  ctx.input.raw_data_size = sizeof(kDynDXTLoader);
+  ctx.input.alloc = malloc;
+  ctx.input.free = free;
+  ctx.input.resolve_import_by_ordinal = ResolveImportByOrdinalAlwaysSucceed;
+  ctx.input.resolve_import_by_name = ResolveImportByNameAlwaysSucceed;
+
+  BOOST_TEST(DLLLoad(&ctx));
+
+  uint32_t image_size = ctx.output.header.OptionalHeader.SizeOfImage;
+
+  BOOST_TEST(image_size == sizeof(kRelocatedB00D7000));
+
+  BOOST_TEST(memcmp(ctx.output.image, kRelocatedB00D7000, image_size));
+
+  DLLRelocate(&ctx, 0xB00D7000);
+
+  auto loaded = reinterpret_cast<const uint8_t *>(ctx.output.image);
+  const uint8_t *golden = kRelocatedB00D7000;
+  for (auto i = 0; i < image_size; ++i, ++loaded, ++golden) {
+    BOOST_TEST_CONTEXT("[0x" << std::hex << i << "]") {
+      BOOST_TEST(*loaded == *golden);
+    }
+  }
+
+  DLLFreeContext(&ctx, false);
+}
 BOOST_AUTO_TEST_SUITE_END()
 
 static bool ResolveImportByOrdinalAlwaysFail(const char *, uint32_t,
@@ -128,9 +161,12 @@ static bool ResolveImportByNameAlwaysFail(const char *, const char *,
   return false;
 }
 
-static bool ResolveImportByOrdinalAlwaysSucceed(const char *, uint32_t,
+static bool ResolveImportByOrdinalAlwaysSucceed(const char *module,
+                                                uint32_t ordinal,
                                                 uint32_t *result) {
-  *result = 0xF00DABCD;
+  // The golden relocated image was prepared with predictable fake addresses
+  // that must be matched here.
+  *result = (strlen(module) << 16) + ordinal;
   return true;
 }
 

@@ -16,6 +16,8 @@ extern "C" {
 #define DLL_LOADER_API
 #endif  // #ifdef _WIN32
 
+typedef uint32_t hwaddress_t;
+
 typedef enum DLLLoaderContext {
   DLLL_NOT_PARSED = 0,
   DLLL_DOS_HEADER = 1,
@@ -104,7 +106,7 @@ typedef struct DLLLoaderOutput {
   void *image;
 
   // The rebased entrypoint of the DLL.
-  void *entrypoint;
+  hwaddress_t entrypoint;
 
   DLLLoaderContext context;
   DLLLoaderStatus status;
@@ -124,7 +126,7 @@ bool DLLLoad(DLLContext *ctx);
 bool DLLParse(DLLContext *ctx);
 
 // Update the image to be loaded at the given address.
-bool DLLRelocate(DLLContext *ctx, uint32_t base_address);
+bool DLLRelocate(DLLContext *ctx, hwaddress_t base_address);
 
 bool DLLInvokeTLSCallbacks(DLLContext *ctx);
 

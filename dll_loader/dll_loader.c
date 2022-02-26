@@ -306,19 +306,19 @@ static bool DLLResolveImports(DLLContext *ctx) {
   return true;
 }
 
-bool DLLRelocate(DLLContext *ctx, uint32_t new_base) {
+bool DLLRelocate(DLLContext *ctx, hwaddress_t new_base) {
   SET_ERROR_CONTEXT(ctx, DLLL_RELOCATE);
 
-  intptr_t header_image_base = ctx->output.header.OptionalHeader.ImageBase;
-  if ((intptr_t)new_base == header_image_base) {
+  uint32_t header_image_base = ctx->output.header.OptionalHeader.ImageBase;
+  if (new_base == header_image_base) {
     return true;
   }
 
   int32_t image_delta = 0;
-  if ((intptr_t)new_base > header_image_base) {
-    image_delta = (int32_t)((intptr_t)new_base - header_image_base);
+  if (new_base > header_image_base) {
+    image_delta = (int32_t)(new_base - header_image_base);
   } else {
-    image_delta = -1 * (header_image_base - (intptr_t)new_base);
+    image_delta = -1 * (int32_t)(header_image_base - new_base);
   }
 
   const IMAGE_DATA_DIRECTORY *directory =
@@ -369,8 +369,8 @@ bool DLLRelocate(DLLContext *ctx, uint32_t new_base) {
   ctx->output.header.OptionalHeader.ImageBase = new_base;
 
   ctx->output.entrypoint =
-      (void *)(intptr_t)(ctx->output.header.OptionalHeader.ImageBase +
-                         ctx->output.header.OptionalHeader.AddressOfEntryPoint);
+      (hwaddress_t)(ctx->output.header.OptionalHeader.ImageBase +
+                    ctx->output.header.OptionalHeader.AddressOfEntryPoint);
 
   return true;
 }

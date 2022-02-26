@@ -39,6 +39,8 @@ add_test(NAME command_processor_util_tests COMMAND command_processor_util_tests)
 # dll_loader_tests
 add_executable(
         dll_loader_tests
+        dll_loader/golden_dll.h
+        dll_loader/relocated_B00D7000.h
         dll_loader/test_main.cpp
         ../dll_loader/dll_loader.c
         ../dll_loader/dll_loader.h

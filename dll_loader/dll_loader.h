@@ -115,7 +115,16 @@ typedef struct DLLContext {
   DLLLoaderOutput output;
 } DLLContext;
 
+// Load the DLL into newly allocated memory, relocating to work properly
+// in-place.
 bool DLLLoad(DLLContext *ctx);
+
+// Load the DLL into newly allocated memory and resolve imports but do not
+// relocate it.
+bool DLLParse(DLLContext *ctx);
+
+// Update the image to be loaded at the given address.
+bool DLLRelocate(DLLContext *ctx, uint32_t base_address);
 
 bool DLLInvokeTLSCallbacks(DLLContext *ctx);
 

@@ -44,6 +44,78 @@ BOOST_AUTO_TEST_CASE(valid_dll_test) {
   DLLFreeContext(&ctx, false);
 }
 
+BOOST_AUTO_TEST_CASE(nop_relocation_test) {
+  DLLContext ctx;
+
+  memset(&ctx, 0, sizeof(ctx));
+
+  ctx.input.raw_data = kDynDXTLoader;
+  ctx.input.raw_data_size = sizeof(kDynDXTLoader);
+  ctx.input.alloc = malloc;
+  ctx.input.free = free;
+  ctx.input.resolve_import_by_ordinal = ResolveImportByOrdinalAlwaysSucceed;
+  ctx.input.resolve_import_by_name = ResolveImportByNameAlwaysSucceed;
+
+  BOOST_TEST(DLLLoad(&ctx));
+
+  uint32_t base = (uint32_t)(intptr_t)ctx.output.image;
+  void *entrypoint = ctx.output.entrypoint;
+
+  DLLRelocate(&ctx, base);
+
+  BOOST_TEST(entrypoint == ctx.output.entrypoint);
+
+  DLLFreeContext(&ctx, false);
+}
+
+BOOST_AUTO_TEST_CASE(positive_relocation_test) {
+  DLLContext ctx;
+
+  memset(&ctx, 0, sizeof(ctx));
+
+  ctx.input.raw_data = kDynDXTLoader;
+  ctx.input.raw_data_size = sizeof(kDynDXTLoader);
+  ctx.input.alloc = malloc;
+  ctx.input.free = free;
+  ctx.input.resolve_import_by_ordinal = ResolveImportByOrdinalAlwaysSucceed;
+  ctx.input.resolve_import_by_name = ResolveImportByNameAlwaysSucceed;
+
+  BOOST_TEST(DLLLoad(&ctx));
+
+  uint32_t base = (uint32_t)(intptr_t)ctx.output.image;
+  uint32_t entrypoint = (uint32_t)(intptr_t)ctx.output.entrypoint;
+
+  DLLRelocate(&ctx, base + 0x500);
+
+  BOOST_TEST((entrypoint + 0x500) == (uint32_t)(intptr_t)ctx.output.entrypoint);
+
+  DLLFreeContext(&ctx, false);
+}
+
+BOOST_AUTO_TEST_CASE(negative_relocation_test) {
+  DLLContext ctx;
+
+  memset(&ctx, 0, sizeof(ctx));
+
+  ctx.input.raw_data = kDynDXTLoader;
+  ctx.input.raw_data_size = sizeof(kDynDXTLoader);
+  ctx.input.alloc = malloc;
+  ctx.input.free = free;
+  ctx.input.resolve_import_by_ordinal = ResolveImportByOrdinalAlwaysSucceed;
+  ctx.input.resolve_import_by_name = ResolveImportByNameAlwaysSucceed;
+
+  BOOST_TEST(DLLLoad(&ctx));
+
+  uint32_t base = (uint32_t)(intptr_t)ctx.output.image;
+  uint32_t entrypoint = (uint32_t)(intptr_t)ctx.output.entrypoint;
+
+  DLLRelocate(&ctx, base - 0x500);
+
+  BOOST_TEST((entrypoint - 0x500) == (uint32_t)(intptr_t)ctx.output.entrypoint);
+
+  DLLFreeContext(&ctx, false);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 static bool ResolveImportByOrdinalAlwaysFail(const char *, uint32_t,

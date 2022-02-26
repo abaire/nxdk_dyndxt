@@ -53,9 +53,21 @@ static bool DLLParseHeader(DLLContext *ctx);
 static bool DLLLoadImage(DLLContext *ctx);
 static bool DLLProcessSections(DLLContext *ctx);
 static bool DLLResolveImports(DLLContext *ctx);
-static bool DLLRelocate(DLLContext *ctx);
 
 bool DLLLoad(DLLContext *ctx) {
+  if (!DLLParse(ctx)) {
+    return false;
+  }
+
+  if (!DLLRelocate(ctx, (uint32_t)(intptr_t)ctx->output.image)) {
+    DLLFreeContext(ctx, false);
+    return false;
+  }
+
+  return true;
+}
+
+bool DLLParse(DLLContext *ctx) {
   SET_ERROR_CONTEXT(ctx, DLLL_NOT_PARSED);
   memset(&ctx->output, 0, sizeof(ctx->output));
 
@@ -78,15 +90,6 @@ bool DLLLoad(DLLContext *ctx) {
     DLLFreeContext(ctx, false);
     return false;
   }
-
-  if (!DLLRelocate(ctx)) {
-    DLLFreeContext(ctx, false);
-    return false;
-  }
-
-  ctx->output.entrypoint =
-      ctx->output.header.OptionalHeader.ImageBase +
-      ctx->output.header.OptionalHeader.AddressOfEntryPoint;
 
   return true;
 }
@@ -303,19 +306,19 @@ static bool DLLResolveImports(DLLContext *ctx) {
   return true;
 }
 
-static bool DLLRelocate(DLLContext *ctx) {
+bool DLLRelocate(DLLContext *ctx, uint32_t new_base) {
   SET_ERROR_CONTEXT(ctx, DLLL_RELOCATE);
 
   intptr_t header_image_base = ctx->output.header.OptionalHeader.ImageBase;
-  if ((intptr_t)ctx->output.image == header_image_base) {
+  if ((intptr_t)new_base == header_image_base) {
     return true;
   }
 
   int32_t image_delta = 0;
-  if ((intptr_t)ctx->output.image > header_image_base) {
-    image_delta = (int32_t)((intptr_t)ctx->output.image - header_image_base);
+  if ((intptr_t)new_base > header_image_base) {
+    image_delta = (int32_t)((intptr_t)new_base - header_image_base);
   } else {
-    image_delta = -1 * (header_image_base - (intptr_t)ctx->output.image);
+    image_delta = -1 * (header_image_base - (intptr_t)new_base);
   }
 
   const IMAGE_DATA_DIRECTORY *directory =
@@ -363,6 +366,11 @@ static bool DLLRelocate(DLLContext *ctx) {
     block = (IMAGE_BASE_RELOCATION *)(relocation_start);
   }
 
-  ctx->output.header.OptionalHeader.ImageBase = (intptr_t)ctx->output.image;
+  ctx->output.header.OptionalHeader.ImageBase = new_base;
+
+  ctx->output.entrypoint =
+      (void *)(intptr_t)(ctx->output.header.OptionalHeader.ImageBase +
+                         ctx->output.header.OptionalHeader.AddressOfEntryPoint);
+
   return true;
 }

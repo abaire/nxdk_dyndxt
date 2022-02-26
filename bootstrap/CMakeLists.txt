@@ -38,18 +38,3 @@ set_target_properties(
         RULE_LAUNCH_LINK "${GENERATE_RAW_BINARY}"
         COMPILE_FLAGS "-I ${CMAKE_CURRENT_SOURCE_DIR}"
 )
-
-# L2 bootstrap loader --------------------------------
-set(
-        L2BOOTSTRAP_THUNK_SOURCES
-        bootstrap_l2_thunk.asm
-)
-
-set_source_files_properties(${L2BOOTSTRAP_THUNK_SOURCES} PROPERTIES LANGUAGE ASM_NASM)
-add_library(bootstrap_l2_thunk STATIC EXCLUDE_FROM_ALL ${L2BOOTSTRAP_THUNK_SOURCES})
-set_target_properties(
-        bootstrap_l2_thunk
-        PROPERTIES
-        RULE_LAUNCH_LINK "${GENERATE_RAW_BINARY}"
-        COMPILE_FLAGS "-I ${CMAKE_CURRENT_SOURCE_DIR}"
-)

@@ -127,7 +127,6 @@ add_dependencies(
         xbdm_lib
         dynamic_dxt_loader_lib
         bootstrap_l1
-        bootstrap_l2_thunk
 )
 
 install(
@@ -139,7 +138,6 @@ install(
 install(
         FILES
         ${CMAKE_CURRENT_BINARY_DIR}/bootstrap_l1.asm.obj
-        ${CMAKE_CURRENT_BINARY_DIR}/bootstrap_l2_thunk.asm.obj
         ${CMAKE_CURRENT_BINARY_DIR}/dynamic_dxt_loader.lib
         ${CMAKE_CURRENT_BINARY_DIR}/xbdm.lib
         DESTINATION

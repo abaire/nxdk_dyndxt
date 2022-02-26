@@ -4,7 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "xbdm.h"
 #include "xbdm_err.h"
+
+// 'dmcp' - ddxt command processor
+static const uint32_t kTag = 0x64786370;
 
 static const char *FirstNonSpace(const char *input);
 static const char *KeyEnd(const char *input);
@@ -13,21 +17,21 @@ static const char *ValueEnd(const char *input, bool *has_escaped_values);
 void CP_API CPDelete(CommandParameters *cp) {
   for (int i = 0; i < cp->entries; ++i) {
     if (cp->keys && cp->keys[i]) {
-      free(cp->keys[i]);
+      DmFreePool(cp->keys[i]);
     }
     if (cp->values && cp->values[i]) {
-      free(cp->values[i]);
+      DmFreePool(cp->values[i]);
     }
   }
 
   cp->entries = 0;
   if (cp->keys) {
-    free(cp->keys);
+    DmFreePool(cp->keys);
     cp->keys = NULL;
   }
 
   if (cp->values) {
-    free(cp->values);
+    DmFreePool(cp->values);
     cp->values = NULL;
   }
 }
@@ -35,15 +39,23 @@ void CP_API CPDelete(CommandParameters *cp) {
 static bool CommandParametersReserve(int32_t max_entries,
                                      CommandParameters *cp) {
   const size_t new_size = sizeof(char *) * max_entries;
-  char **new_keys = realloc(cp->keys, new_size);
+  char **new_keys = DmAllocatePoolWithTag(new_size, kTag);
   if (!new_keys) {
     return false;
   }
+  if (cp->keys) {
+    memcpy(new_keys, cp->keys, sizeof(new_keys[0]) * cp->entries);
+    DmFreePool(cp->keys);
+  }
   cp->keys = new_keys;
 
-  char **new_values = realloc(cp->values, new_size);
+  char **new_values = DmAllocatePoolWithTag(new_size, kTag);
   if (!new_values) {
     return false;
+  }
+  if (cp->values) {
+    memcpy(new_values, cp->values, sizeof(new_values[0]) * cp->entries);
+    DmFreePool(cp->values);
   }
   cp->values = new_values;
 
@@ -68,7 +80,7 @@ static int32_t CommandParametersAppend(
 
   int32_t index = cp->entries;
   size_t key_size = 1 + key_end - key_start;
-  cp->keys[index] = (char *)malloc(key_size);
+  cp->keys[index] = (char *)DmAllocatePoolWithTag(key_size, kTag);
   if (!cp->keys[index]) {
     return PCP_ERR_OUT_OF_MEMORY;
   }
@@ -78,7 +90,8 @@ static int32_t CommandParametersAppend(
 
   if (value_start && value_start != value_end) {
     size_t value_size = 1 + value_end - value_start;
-    cp->values[cp->entries - 1] = (char *)malloc(value_size);
+    cp->values[cp->entries - 1] =
+        (char *)DmAllocatePoolWithTag(value_size, kTag);
     if (!cp->values[index]) {
       return PCP_ERR_OUT_OF_MEMORY;
     }

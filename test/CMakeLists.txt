@@ -21,12 +21,20 @@ include_directories("${Boost_INCLUDE_DIR}")
 add_executable(
         command_processor_util_tests
         command_processor_util/test_main.cpp
+        test_util/xbdm_stubs.cpp
+        test_util/xbdm_stubs.h
+        test_util/windows.h
         ../src/command_processor_util.c
         ../src/command_processor_util.h
+        ../src/xbdm.h
+        third_party/nxdk/winapi/winnt.h
+        third_party/nxdk/xboxkrnl/xboxdef.h
 )
 target_include_directories(
         command_processor_util_tests
         PRIVATE ../src
+        PRIVATE test_util
+        PRIVATE third_party/nxdk
 )
 target_link_libraries(
         command_processor_util_tests

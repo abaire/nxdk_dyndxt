@@ -81,9 +81,16 @@ bool MR_API MRGetMethodByName(const char *module_name, const char *name,
   }
 
   ExportNode *node = table->exports;
-  while (node && strcmp(node->entry.method_name, name)) {
+  while (node) {
+    if (node->entry.method_name && !strcmp(node->entry.method_name, name)) {
+      break;
+    }
+    if (node->entry.alias && !strcmp(node->entry.alias, name)) {
+      break;
+    }
     node = node->next;
   }
+
   if (!node) {
     return false;
   }
@@ -156,7 +163,12 @@ void MR_API MRResetRegistry(void) {
     while (node) {
       ExportNode *node_delete = node;
       node = node->next;
-      DmFreePool(node_delete->entry.method_name);
+      if (node_delete->entry.method_name) {
+        DmFreePool(node_delete->entry.method_name);
+      }
+      if (node_delete->entry.alias) {
+        DmFreePool(node_delete->entry.alias);
+      }
       DmFreePool(node_delete);
     }
     ModuleExportTable *table_delete = table;
@@ -191,6 +203,9 @@ static bool AppendExport(ModuleExportTable *table,
     if (n->entry.ordinal == module_export->ordinal) {
       if (n->entry.method_name) {
         DmFreePool(n->entry.method_name);
+      }
+      if (n->entry.alias) {
+        DmFreePool(n->entry.alias);
       }
       memcpy(&n->entry, module_export, sizeof(n->entry));
       return true;

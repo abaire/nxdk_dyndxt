@@ -75,26 +75,31 @@ static HRESULT_API ReceiveImageData(struct CommandContext *ctx, char *response,
 
 static HRESULT ReceiveImageDataComplete(ReceiveImageDataContext *ctx,
                                         char *response, DWORD response_len);
-static bool RegisterExport(const char *name, uint32_t ordinal,
-                           uint32_t address);
+static bool RegisterExport(const char *name, const char *alias,
+                           uint32_t ordinal, uint32_t address);
 
 HRESULT_API DxtMain(void) {
   // Register methods exported by this DLL for use in DLLs to be loaded later.
+  // Methods are registered for undecorated and __stdcall decorated versions of
+  // the names to minimize dependencies on linker flags.
   //
-  // `nm -g libdynamic_dxt_loader.lib | grep "T _"` can be used to make sure
-  // the names are correct.
-  RegisterExport("_CPDelete@4", 2, (uint32_t)CPDelete);
-  RegisterExport("_CPParseCommandParameters@8", 3,
+  // Decorated names can be determined by using `nm` on the lib file generated
+  // by building this project:
+  // `nm -g libdynamic_dxt_loader.lib | grep "T _"`
+  RegisterExport("CPDelete@4", "CPDelete", 2, (uint32_t)CPDelete);
+  RegisterExport("CPParseCommandParameters@8", "CPParseCommandParameters", 3,
                  (uint32_t)CPParseCommandParameters);
-  RegisterExport("_CPPrintError@12", 4, (uint32_t)CPPrintError);
-  RegisterExport("_CPHasKey@8", 5, (uint32_t)CPHasKey);
-  RegisterExport("_CPGetString@12", 6, (uint32_t)CPGetString);
-  RegisterExport("_CPGetUInt32@12", 7, (uint32_t)CPGetUInt32);
-  RegisterExport("_CPGetInt32@12", 8, (uint32_t)CPGetInt32);
-  RegisterExport("_MRRegisterMethod@8", 9, (uint32_t)MRRegisterMethod);
-  RegisterExport("_MRGetMethodByOrdinal@12", 10,
+  RegisterExport("CPPrintError@12", "CPPrintError", 4, (uint32_t)CPPrintError);
+  RegisterExport("CPHasKey@8", "CPHasKey", 5, (uint32_t)CPHasKey);
+  RegisterExport("CPGetString@12", "CPGetString", 6, (uint32_t)CPGetString);
+  RegisterExport("CPGetUInt32@12", "CPGetUInt32", 7, (uint32_t)CPGetUInt32);
+  RegisterExport("CPGetInt32@12", "CPGetInt32", 8, (uint32_t)CPGetInt32);
+  RegisterExport("MRRegisterMethod@8", "MRRegisterMethod", 9,
+                 (uint32_t)MRRegisterMethod);
+  RegisterExport("MRGetMethodByOrdinal@12", "MRGetMethodByOrdinal", 10,
                  (uint32_t)MRGetMethodByOrdinal);
-  RegisterExport("_MRGetMethodByName@12", 11, (uint32_t)MRGetMethodByName);
+  RegisterExport("MRGetMethodByName@12", "MRGetMethodByName", 11,
+                 (uint32_t)MRGetMethodByName);
 
   return DmRegisterCommandProcessor(kHandlerName, ProcessCommand);
 }
@@ -141,8 +146,9 @@ static HRESULT_API SendMethodAddresses(struct CommandContext *ctx,
 
   static const char no_name[] = "";
   const char *export_name = entry->method_name ? entry->method_name : no_name;
-  sprintf(ctx->buffer, "%s @ %d (%s) = 0x%08X", module_name, entry->ordinal,
-          export_name, entry->address);
+  const char *alias = entry->alias ? entry->alias : no_name;
+  sprintf(ctx->buffer, "%s @ %d %s %s = 0x%08X", module_name, entry->ordinal,
+          export_name, alias, entry->address);
   return XBOX_S_OK;
 }
 
@@ -398,6 +404,8 @@ static HRESULT HandleRegisterModuleExport(const char *command, char *response,
   bool name_found = CPGetString("module", &module_name, &cp);
   const char *export_name;
   bool export_name_found = CPGetString("name", &export_name, &cp);
+  const char *alias;
+  bool alias_found = CPGetString("alias", &alias, &cp);
   bool ordinal_found = CPGetUInt32("ordinal", &entry.ordinal, &cp);
   bool address_found = CPGetUInt32("addr", &entry.address, &cp);
 
@@ -436,11 +444,28 @@ static HRESULT HandleRegisterModuleExport(const char *command, char *response,
     }
   }
 
+  entry.alias = NULL;
+  if (alias_found) {
+    entry.alias = PoolStrdup(alias, kTag);
+    if (!entry.alias) {
+      if (entry.method_name) {
+        DmFreePool(entry.method_name);
+      }
+      DmFreePool(module_name_saved);
+      CPDelete(&cp);
+      return SetXBDMError(XBOX_E_ACCESS_DENIED, "Out of memory", response,
+                          response_len);
+    }
+  }
+
   CPDelete(&cp);
 
   if (!MRRegisterMethod(module_name_saved, &entry)) {
     if (entry.method_name) {
       DmFreePool(entry.method_name);
+    }
+    if (entry.alias) {
+      DmFreePool(entry.alias);
     }
 
     DmFreePool(module_name_saved);
@@ -454,8 +479,8 @@ static HRESULT HandleRegisterModuleExport(const char *command, char *response,
   return XBOX_S_OK;
 }
 
-static bool RegisterExport(const char *name, uint32_t ordinal,
-                           uint32_t address) {
+static bool RegisterExport(const char *name, const char *alias,
+                           uint32_t ordinal, uint32_t address) {
   // Keep in sync with name used in dynamic_dxt_loader.dll.def
   static const char kDynamicDXTLoaderDLLName[] = "dynamic_dxt_loader.dll";
 
@@ -463,6 +488,16 @@ static bool RegisterExport(const char *name, uint32_t ordinal,
   entry.method_name = PoolStrdup(name, kTag);
   if (!entry.method_name) {
     return false;
+  }
+  if (!alias) {
+    entry.alias = NULL;
+  } else {
+    entry.alias = PoolStrdup(alias, kTag);
+    if (!entry.alias) {
+      DmFreePool(entry.method_name);
+      entry.method_name = NULL;
+      return false;
+    }
   }
   entry.ordinal = ordinal;
   entry.address = address;

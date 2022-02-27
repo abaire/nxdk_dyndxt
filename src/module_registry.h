@@ -18,6 +18,7 @@ extern "C" {
 typedef struct ModuleExport {
   uint32_t ordinal;
   char *method_name;
+  char *alias;  // Optional alias for method_name.
   uint32_t address;
 } ModuleExport;
 
@@ -28,7 +29,7 @@ typedef struct ModuleRegistryCursor {
 } ModuleRegistryCursor;
 
 // Registers the given export for the given module.
-// NOTE: The module info registry takes ownership of the string within the
+// NOTE: The module info registry takes ownership of the strings within the
 // export, which must be DmPoolAllocate-allocated or scoped beyond the lifetime
 // of the registry.
 bool MR_API MRRegisterMethod(const char *module_name,

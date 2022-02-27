@@ -3,6 +3,8 @@
 
 #define FACILITY_XBOX 0x2DB
 
+#define XBOX_SUCCESS(code) (((code)&0x80000000) == 0)
+
 #define DEF_SUCCESS(code) ((FACILITY_XBOX << 16) + (code))
 #define DEF_ERROR(code) (0x80000000 + (FACILITY_XBOX << 16) + (code))
 

@@ -6,7 +6,7 @@ LIBRARY dynamic_dxt_loader.dll
 EXPORTS
     DxtMain                                 @1
     CPDelete                                @2
-    ParseCommandParameters                  @3
+    CPParseCommandParameters                  @3
     CPPrintError                            @4
     CPHasKey                                @5
     CPGetString                             @6

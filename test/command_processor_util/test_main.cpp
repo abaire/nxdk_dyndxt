@@ -47,17 +47,17 @@ BOOST_AUTO_TEST_SUITE(command_processor_suite)
 BOOST_AUTO_TEST_CASE(invalid_inputs_test) {
   CommandParameters cp;
 
-  BOOST_TEST(ParseCommandParameters(nullptr, &cp) == PCP_ERR_INVALID_INPUT);
+  BOOST_TEST(CPParseCommandParameters(nullptr, &cp) == PCP_ERR_INVALID_INPUT);
   BOOST_TEST(cp.keys == nullptr);
   BOOST_TEST(cp.values == nullptr);
-  BOOST_TEST(ParseCommandParameters("", nullptr) == PCP_ERR_INVALID_INPUT);
+  BOOST_TEST(CPParseCommandParameters("", nullptr) == PCP_ERR_INVALID_INPUT);
 }
 
 // Values without a key are erroneous.
 BOOST_AUTO_TEST_CASE(invalid_key_test) {
   CommandParameters cp;
 
-  BOOST_TEST(ParseCommandParameters("=keyless_value", &cp) ==
+  BOOST_TEST(CPParseCommandParameters("=keyless_value", &cp) ==
              PCP_ERR_INVALID_KEY);
   BOOST_TEST(cp.keys == nullptr);
   BOOST_TEST(cp.values == nullptr);
@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE(invalid_key_test) {
 BOOST_AUTO_TEST_CASE(empty_input_test) {
   CommandParameters cp;
 
-  BOOST_TEST(ParseCommandParameters("", &cp) == 0);
+  BOOST_TEST(CPParseCommandParameters("", &cp) == 0);
   BOOST_TEST(cp.keys == nullptr);
   BOOST_TEST(cp.values == nullptr);
 }
@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE(empty_input_test) {
 BOOST_AUTO_TEST_CASE(whitespace_only_input_test) {
   CommandParameters cp;
 
-  BOOST_TEST(ParseCommandParameters("     ", &cp) == 0);
+  BOOST_TEST(CPParseCommandParameters("     ", &cp) == 0);
   BOOST_TEST(cp.keys == nullptr);
   BOOST_TEST(cp.values == nullptr);
 }
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(whitespace_only_input_test) {
 BOOST_AUTO_TEST_CASE(leading_whitespace_ignored_test) {
   CommandParameters cp;
 
-  BOOST_TEST(ParseCommandParameters("          test", &cp) == 1);
+  BOOST_TEST(CPParseCommandParameters("          test", &cp) == 1);
   BOOST_TEST(cp.keys);
   TEST_KEY(cp, 0, "test");
   TEST_VALUE_NULL(cp, 0);
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE(leading_whitespace_ignored_test) {
 BOOST_AUTO_TEST_CASE(valueless_key_trailing_whitespace_ignored_test) {
   CommandParameters cp;
 
-  BOOST_TEST(ParseCommandParameters("test       ", &cp) == 1);
+  BOOST_TEST(CPParseCommandParameters("test       ", &cp) == 1);
   TEST_KEY(cp, 0, "test");
   TEST_VALUE_NULL(cp, 0);
 
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(valueless_key_trailing_whitespace_ignored_test) {
 BOOST_AUTO_TEST_CASE(single_valueless_key_test) {
   CommandParameters cp;
 
-  BOOST_TEST(ParseCommandParameters("test", &cp) == 1);
+  BOOST_TEST(CPParseCommandParameters("test", &cp) == 1);
   BOOST_TEST(cp.entries == 1);
   TEST_KEY(cp, 0, "test");
   TEST_VALUE_NULL(cp, 0);
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE(single_valueless_key_test) {
 BOOST_AUTO_TEST_CASE(single_key_value_test) {
   CommandParameters cp;
 
-  BOOST_TEST(ParseCommandParameters("test=value", &cp) == 1);
+  BOOST_TEST(CPParseCommandParameters("test=value", &cp) == 1);
   BOOST_TEST(cp.entries == 1);
   TEST_KEY(cp, 0, "test");
   TEST_VALUE(cp, 0, "value");
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(single_key_value_test) {
 BOOST_AUTO_TEST_CASE(multiple_key_value_test) {
   CommandParameters cp;
 
-  BOOST_TEST(ParseCommandParameters("test=value test2=value2", &cp) == 2);
+  BOOST_TEST(CPParseCommandParameters("test=value test2=value2", &cp) == 2);
   BOOST_TEST(cp.entries == 2);
   TEST_KEY(cp, 0, "test");
   TEST_VALUE(cp, 0, "value");
@@ -147,7 +147,7 @@ BOOST_AUTO_TEST_CASE(multiple_key_value_test) {
 BOOST_AUTO_TEST_CASE(valueless_and_key_value_test) {
   CommandParameters cp;
 
-  BOOST_TEST(ParseCommandParameters("test test2=value2 test3", &cp) == 3);
+  BOOST_TEST(CPParseCommandParameters("test test2=value2 test3", &cp) == 3);
   BOOST_TEST(cp.entries == 3);
   TEST_KEY(cp, 0, "test");
   TEST_VALUE_NULL(cp, 0);
@@ -163,8 +163,8 @@ BOOST_AUTO_TEST_CASE(valueless_and_key_value_test) {
 BOOST_AUTO_TEST_CASE(single_key_quoted_value_test) {
   CommandParameters cp;
 
-  BOOST_TEST(ParseCommandParameters("test=\"quoted value with spaces\"", &cp) ==
-             1);
+  BOOST_TEST(
+      CPParseCommandParameters("test=\"quoted value with spaces\"", &cp) == 1);
   BOOST_TEST(cp.entries == 1);
   TEST_KEY(cp, 0, "test");
   TEST_VALUE(cp, 0, "quoted value with spaces");
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(single_key_quoted_value_test) {
 BOOST_AUTO_TEST_CASE(single_key_unterminated_quoted_value_test) {
   CommandParameters cp;
 
-  BOOST_TEST(ParseCommandParameters("test=\"quoted value ", &cp) ==
+  BOOST_TEST(CPParseCommandParameters("test=\"quoted value ", &cp) ==
              PCP_ERR_INVALID_INPUT_UNTERMINATED_QUOTED_KEY);
   BOOST_TEST(cp.keys == nullptr);
   BOOST_TEST(cp.values == nullptr);
@@ -188,8 +188,8 @@ BOOST_AUTO_TEST_CASE(single_key_unterminated_quoted_value_test) {
 BOOST_AUTO_TEST_CASE(quoted_value_escaped_quote_test) {
   CommandParameters cp;
 
-  BOOST_TEST(ParseCommandParameters("test=\"quoted value with \\\" quote\"",
-                                    &cp) == 1);
+  BOOST_TEST(CPParseCommandParameters("test=\"quoted value with \\\" quote\"",
+                                      &cp) == 1);
   BOOST_TEST(cp.entries == 1);
   TEST_KEY(cp, 0, "test");
   TEST_VALUE(cp, 0, "quoted value with \" quote");
@@ -202,7 +202,7 @@ BOOST_AUTO_TEST_CASE(complex_test) {
   CommandParameters cp;
 
   BOOST_TEST(
-      ParseCommandParameters(
+      CPParseCommandParameters(
           "test=\"escaped \\\" quote\" test2=value2 test3 test4=\"value4\"",
           &cp) == 4);
   BOOST_TEST(cp.entries == 4);
@@ -226,9 +226,10 @@ BOOST_AUTO_TEST_CASE(many_keys_test) {
 #error "Test must be updated to check allocation beyond initial reserve"
 #endif
 
-  BOOST_TEST(ParseCommandParameters("test=\"escaped \\\" quote\" test2=value2 "
-                                    "test3 test4=\"value4\" test5 test6 test7",
-                                    &cp) == 7);
+  BOOST_TEST(
+      CPParseCommandParameters("test=\"escaped \\\" quote\" test2=value2 "
+                               "test3 test4=\"value4\" test5 test6 test7",
+                               &cp) == 7);
   BOOST_TEST(cp.entries == 7);
   TEST_KEY(cp, 0, "test");
   TEST_VALUE(cp, 0, "escaped \" quote");
@@ -252,7 +253,7 @@ BOOST_AUTO_TEST_CASE(many_keys_test) {
 BOOST_AUTO_TEST_CASE(has_key_test) {
   CommandParameters cp;
 
-  ParseCommandParameters(
+  CPParseCommandParameters(
       "test=\"escaped \\\" quote\" test2=value2 test3 test4=\"value4\" test5 "
       "test6 test7",
       &cp);
@@ -277,7 +278,7 @@ BOOST_AUTO_TEST_CASE(has_key_test) {
 BOOST_AUTO_TEST_CASE(get_string_test) {
   CommandParameters cp;
 
-  ParseCommandParameters(
+  CPParseCommandParameters(
       "test=\"escaped \\\" quote\" test2=value2 test3 test4=\"value4\" ", &cp);
   BOOST_TEST(cp.entries == 4);
 
@@ -309,7 +310,7 @@ BOOST_AUTO_TEST_CASE(get_string_test) {
 BOOST_AUTO_TEST_CASE(get_int32_test) {
   CommandParameters cp;
 
-  ParseCommandParameters(
+  CPParseCommandParameters(
       "test=\"escaped \\\" quote\" test2=2 test3 test4=\"4\" test5=\"5 \" "
       "test6=0xFFFFFFFF test7=-1 test8=+12 test9=0664",
       &cp);
@@ -356,7 +357,7 @@ BOOST_AUTO_TEST_CASE(get_int32_test) {
 BOOST_AUTO_TEST_CASE(get_uint32_test) {
   CommandParameters cp;
 
-  ParseCommandParameters(
+  CPParseCommandParameters(
       "test=\"escaped \\\" quote\" test2=2 test3 test4=\"4\" test5=\"5 \" "
       "test6=0xFFFFFFFF test7=-1 test8=+12 test9=0664",
       &cp);
@@ -401,7 +402,7 @@ BOOST_AUTO_TEST_CASE(get_uint32_test) {
 
 BOOST_AUTO_TEST_CASE(realistic_test) {
   CommandParameters cp;
-  ParseCommandParameters(
+  CPParseCommandParameters(
       "ddxt!install base=0xb00ee000 length=0x5000 entrypoint=0xb00ef000", &cp);
   BOOST_TEST(cp.entries == 4);
 

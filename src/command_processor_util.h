@@ -33,8 +33,8 @@ void CP_API CPDelete(CommandParameters *cp);
 // Parses an XBDM parameter string, populating the given result struct.
 // Returns the number of successfully parsed keys or a PCP_ERR_ define on
 // invalid input.
-int32_t CP_API ParseCommandParameters(const char *params,
-                                      CommandParameters *result);
+int32_t CP_API CPParseCommandParameters(const char *params,
+                                        CommandParameters *result);
 
 uint32_t CP_API CPPrintError(int32_t parse_return_code, char *buffer,
                              uint32_t buffer_len);

@@ -115,8 +115,8 @@ static int32_t CommandParametersAppend(
   return 0;
 }
 
-int32_t CP_API ParseCommandParameters(const char *params,
-                                      CommandParameters *result) {
+int32_t CP_API CPParseCommandParameters(const char *params,
+                                        CommandParameters *result) {
   if (!result) {
     return PCP_ERR_INVALID_INPUT;
   }

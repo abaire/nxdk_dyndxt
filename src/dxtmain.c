@@ -81,8 +81,8 @@ static bool RegisterExport(const char *name, uint32_t ordinal,
 HRESULT_API DxtMain(void) {
   // Register methods exported by this DLL for use in DLLs to be loaded later.
   RegisterExport("CPDelete@4", 2, (uint32_t)CPDelete);
-  RegisterExport("ParseCommandParameters@8", 3,
-                 (uint32_t)ParseCommandParameters);
+  RegisterExport("CPParseCommandParameters@8", 3,
+                 (uint32_t)CPParseCommandParameters);
   RegisterExport("CPPrintError@12", 4, (uint32_t)CPPrintError);
   RegisterExport("CPHasKey@8", 5, (uint32_t)CPHasKey);
   RegisterExport("CPGetString@12", 6, (uint32_t)CPGetString);
@@ -160,7 +160,7 @@ static HRESULT HandleDynamicLoad(const char *command, char *response,
                                  DWORD response_len,
                                  struct CommandContext *ctx) {
   CommandParameters cp;
-  int32_t result = ParseCommandParameters(command, &cp);
+  int32_t result = CPParseCommandParameters(command, &cp);
   if (result < 0) {
     return CPPrintError(result, response, response_len);
   }
@@ -207,7 +207,7 @@ static HRESULT HandleDynamicLoad(const char *command, char *response,
 static HRESULT HandleReserve(const char *command, char *response,
                              DWORD response_len, struct CommandContext *ctx) {
   CommandParameters cp;
-  int32_t result = ParseCommandParameters(command, &cp);
+  int32_t result = CPParseCommandParameters(command, &cp);
   if (result < 0) {
     return CPPrintError(result, response, response_len);
   }
@@ -305,7 +305,7 @@ static HRESULT_API ReceiveImageData(struct CommandContext *ctx, char *response,
 static HRESULT HandleInstall(const char *command, char *response,
                              DWORD response_len, struct CommandContext *ctx) {
   CommandParameters cp;
-  int32_t result = ParseCommandParameters(command, &cp);
+  int32_t result = CPParseCommandParameters(command, &cp);
   if (result < 0) {
     return CPPrintError(result, response, response_len);
   }
@@ -375,7 +375,7 @@ static HRESULT HandleRegisterModuleExport(const char *command, char *response,
                                           DWORD response_len,
                                           struct CommandContext *ctx) {
   CommandParameters cp;
-  int32_t result = ParseCommandParameters(command, &cp);
+  int32_t result = CPParseCommandParameters(command, &cp);
   if (result < 0) {
     return CPPrintError(result, response, response_len);
   }

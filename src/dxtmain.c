@@ -274,8 +274,12 @@ static HRESULT ReceiveImageDataComplete(ReceiveImageDataContext *receive_ctx,
               response_len - (strlen(response) + 1));
     }
     DLLFreeContext(&ctx, false);
+    DmFreePool(receive_ctx->image_base);
     return XBOX_E_FAIL;
   }
+
+  // The raw image data is no longer needed.
+  DmFreePool(receive_ctx->image_base);
 
   if (!DLLInvokeTLSCallbacks(&ctx)) {
     sprintf(response, "Failed to invoke TLS callbacks %d::%d ",
@@ -290,7 +294,7 @@ static HRESULT ReceiveImageDataComplete(ReceiveImageDataContext *receive_ctx,
 
   DxtMainProc entrypoint = (DxtMainProc)ctx.output.entrypoint;
   sprintf(response, "image_base=0x%X entrypoint=0x%X",
-          (uint32_t)receive_ctx->image_base, (uint32_t)entrypoint);
+          (uint32_t)ctx.output.image, (uint32_t)entrypoint);
 
   entrypoint();
   DLLFreeContext(&ctx, true);

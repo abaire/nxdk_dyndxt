@@ -80,17 +80,21 @@ static bool RegisterExport(const char *name, uint32_t ordinal,
 
 HRESULT_API DxtMain(void) {
   // Register methods exported by this DLL for use in DLLs to be loaded later.
-  RegisterExport("CPDelete@4", 2, (uint32_t)CPDelete);
-  RegisterExport("CPParseCommandParameters@8", 3,
+  //
+  // `nm -g libdynamic_dxt_loader.lib | grep "T _"` can be used to make sure
+  // the names are correct.
+  RegisterExport("_CPDelete@4", 2, (uint32_t)CPDelete);
+  RegisterExport("_CPParseCommandParameters@8", 3,
                  (uint32_t)CPParseCommandParameters);
-  RegisterExport("CPPrintError@12", 4, (uint32_t)CPPrintError);
-  RegisterExport("CPHasKey@8", 5, (uint32_t)CPHasKey);
-  RegisterExport("CPGetString@12", 6, (uint32_t)CPGetString);
-  RegisterExport("CPGetUInt32@12", 7, (uint32_t)CPGetUInt32);
-  RegisterExport("CPGetInt32@12", 8, (uint32_t)CPGetInt32);
-  RegisterExport("MRRegisterMethod@8", 9, (uint32_t)MRRegisterMethod);
-  RegisterExport("MRGetMethodByOrdinal@12", 10, (uint32_t)MRGetMethodByOrdinal);
-  RegisterExport("MRGetMethodByName@12", 11, (uint32_t)MRGetMethodByName);
+  RegisterExport("_CPPrintError@12", 4, (uint32_t)CPPrintError);
+  RegisterExport("_CPHasKey@8", 5, (uint32_t)CPHasKey);
+  RegisterExport("_CPGetString@12", 6, (uint32_t)CPGetString);
+  RegisterExport("_CPGetUInt32@12", 7, (uint32_t)CPGetUInt32);
+  RegisterExport("_CPGetInt32@12", 8, (uint32_t)CPGetInt32);
+  RegisterExport("_MRRegisterMethod@8", 9, (uint32_t)MRRegisterMethod);
+  RegisterExport("_MRGetMethodByOrdinal@12", 10,
+                 (uint32_t)MRGetMethodByOrdinal);
+  RegisterExport("_MRGetMethodByName@12", 11, (uint32_t)MRGetMethodByName);
 
   return DmRegisterCommandProcessor(kHandlerName, ProcessCommand);
 }
@@ -257,15 +261,23 @@ static HRESULT ReceiveImageDataComplete(ReceiveImageDataContext *receive_ctx,
   ctx.input.resolve_import_by_name = MRGetMethodByName;
 
   if (!DLLLoad(&ctx)) {
-    sprintf(response, "DLLLoad failed %d::%d", ctx.output.context,
+    sprintf(response, "DLLLoad failed %d::%d ", ctx.output.context,
             ctx.output.status);
+    if (ctx.output.error_message[0]) {
+      strncat(response, ctx.output.error_message,
+              response_len - (strlen(response) + 1));
+    }
     DLLFreeContext(&ctx, false);
     return XBOX_E_FAIL;
   }
 
   if (!DLLInvokeTLSCallbacks(&ctx)) {
-    sprintf(response, "Failed to invoke TLS callbacks %d::%d",
+    sprintf(response, "Failed to invoke TLS callbacks %d::%d ",
             ctx.output.context, ctx.output.status);
+    if (ctx.output.error_message[0]) {
+      strncat(response, ctx.output.error_message,
+              response_len - (strlen(response) + 1));
+    }
     DLLFreeContext(&ctx, false);
     return XBOX_E_FAIL;
   }

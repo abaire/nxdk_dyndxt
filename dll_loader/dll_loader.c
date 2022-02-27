@@ -1,5 +1,6 @@
 #include "dll_loader.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #define SET_ERROR_CONTEXT(context_ptr, value) \
@@ -7,6 +8,15 @@
 
 #define SET_ERROR_STATUS(context_ptr, value) \
   (context_ptr)->output.status = (value)
+
+#define SET_ERROR_MESSAGE(context_ptr, len, ...)                 \
+  do {                                                           \
+    if (len >= DLLL_MAX_ERROR_LEN) {                             \
+      strcpy((context_ptr)->output.error_message, "TOOSMALL");   \
+    } else {                                                     \
+      sprintf((context_ptr)->output.error_message, __VA_ARGS__); \
+    }                                                            \
+  } while (0)
 
 #define SETUP_READ_PTR(context_ptr)                     \
   const void *read_ptr = (context_ptr)->input.raw_data; \
@@ -287,6 +297,8 @@ static bool DLLResolveImports(DLLContext *ctx) {
         uint32_t ordinal = *thunk & 0xFFFF;
         if (!ctx->input.resolve_import_by_ordinal(image_name, ordinal,
                                                   function)) {
+          SET_ERROR_MESSAGE(ctx, strlen(image_name) + 16, "%s @ %d", image_name,
+                            ordinal);
           SET_ERROR_STATUS(ctx, DLLL_UNRESOLVED_IMPORT);
           return false;
         }
@@ -296,6 +308,9 @@ static bool DLLResolveImports(DLLContext *ctx) {
         const char *import_name = (const char *)(name_data->Name);
         if (!ctx->input.resolve_import_by_name(image_name, import_name,
                                                function)) {
+          uint32_t message_len = strlen(image_name) + strlen(import_name) + 8;
+          SET_ERROR_MESSAGE(ctx, message_len, "%s @ %s", image_name,
+                            import_name);
           SET_ERROR_STATUS(ctx, DLLL_UNRESOLVED_IMPORT);
           return false;
         }

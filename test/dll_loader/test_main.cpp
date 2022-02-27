@@ -28,6 +28,28 @@ BOOST_AUTO_TEST_CASE(empty_raw_data_test) {
   DLLFreeContext(&ctx, false);
 }
 
+BOOST_AUTO_TEST_CASE(missing_import_test) {
+  DLLContext ctx;
+
+  memset(&ctx, 0, sizeof(ctx));
+
+  ctx.input.raw_data = kDynDXTLoader;
+  ctx.input.raw_data_size = sizeof(kDynDXTLoader);
+  ctx.input.alloc = malloc;
+  ctx.input.free = free;
+  ctx.input.resolve_import_by_ordinal = ResolveImportByOrdinalAlwaysFail;
+  ctx.input.resolve_import_by_name = ResolveImportByNameAlwaysFail;
+
+  BOOST_TEST(!DLLLoad(&ctx));
+
+  BOOST_TEST(ctx.output.context == DLLL_RESOLVE_IMPORTS);
+  BOOST_TEST(ctx.output.status == DLLL_UNRESOLVED_IMPORT);
+
+  BOOST_TEST(!strcmp(ctx.output.error_message, "xbdm.dll @ 2"));
+
+  DLLFreeContext(&ctx, false);
+}
+
 BOOST_AUTO_TEST_CASE(valid_dll_test) {
   DLLContext ctx;
 

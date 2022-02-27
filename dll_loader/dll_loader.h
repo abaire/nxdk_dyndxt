@@ -16,6 +16,11 @@ extern "C" {
 #define DLL_LOADER_API
 #endif  // #ifdef _WIN32
 
+// Maximum size of an error message string.
+// WARNING: This must always be at least sizeof("TOOSMALL") to allow the loader
+// to report that the buffer is insufficient to hold the real error message.
+#define DLLL_MAX_ERROR_LEN 256
+
 typedef uint32_t hwaddress_t;
 
 typedef enum DLLLoaderContext {
@@ -110,6 +115,7 @@ typedef struct DLLLoaderOutput {
 
   DLLLoaderContext context;
   DLLLoaderStatus status;
+  char error_message[DLLL_MAX_ERROR_LEN];
 } DLLLoaderOutput;
 
 typedef struct DLLContext {
@@ -130,9 +136,9 @@ bool DLLRelocate(DLLContext *ctx, hwaddress_t base_address);
 
 bool DLLInvokeTLSCallbacks(DLLContext *ctx);
 
-// Frees resources owned by the given DLLContext instance, optionally leaving
-// the loaded DLL image intact (it is up to the caller to preserve and free the
-// image if `keep_image` is true).
+// Frees resources owned by the given DLLContext instance.
+// If `keep_image` is true, the loaded DLL image is kept intact. It is up to the
+// caller to preserve and free the image if it has been allocated).
 void DLLFreeContext(DLLContext *ctx, bool keep_image);
 
 #ifdef __cplusplus

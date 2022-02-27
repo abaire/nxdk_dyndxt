@@ -4,14 +4,14 @@
 LIBRARY dynamic_dxt_loader.dll
 
 EXPORTS
-    DxtMain                                 @1      NONAME
-    CPDelete                                @2      NONAME
-    ParseCommandParameters                  @3      NONAME
-    CPPrintError                            @4      NONAME
-    CPHasKey                                @5      NONAME
-    CPGetString                             @6      NONAME
-    CPGetUInt32                             @7      NONAME
-    CPGetInt32                              @8      NONAME
-    MRRegisterMethod                        @9      NONAME
-    MRGetMethodByOrdinal                    @10     NONAME
-    MRGetMethodByName                       @11     NONAME
+    DxtMain                                 @1
+    CPDelete                                @2
+    ParseCommandParameters                  @3
+    CPPrintError                            @4
+    CPHasKey                                @5
+    CPGetString                             @6
+    CPGetUInt32                             @7
+    CPGetInt32                              @8
+    MRRegisterMethod                        @9
+    MRGetMethodByOrdinal                    @10
+    MRGetMethodByName                       @11

@@ -57,6 +57,9 @@ extern PVOID_API DmAllocatePoolWithTag(DWORD size, DWORD tag);
 // DmAllocatePoolWithTag.
 extern VOID_API DmFreePool(void *block);
 
+// Send a message to the notification channel.
+extern HRESULT_API DmSendNotificationString(const char *message);
+
 #ifdef __cplusplus
 };  // extern "C"
 #endif

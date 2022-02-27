@@ -108,6 +108,7 @@ static int32_t CommandParametersAppend(
         }
         *dest++ = *value_start++;
       }
+      *dest = 0;
     }
   }
 

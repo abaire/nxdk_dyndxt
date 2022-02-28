@@ -1,6 +1,10 @@
 #ifndef DYNDXT_LOADER_XBDM_ERR_H
 #define DYNDXT_LOADER_XBDM_ERR_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define FACILITY_XBOX 0x2DB
 
 #define XBOX_SUCCESS(code) (((code)&0x80000000) == 0)
@@ -35,5 +39,9 @@
 #define XBOX_E_TYPE_INVALID DEF_ERROR(0x11)
 #define XBOX_E_DATA_NOT_AVAILABLE DEF_ERROR(0x12)
 #define XBOX_E_DEDICATED_CONNECTION_REQUIRED DEF_ERROR(0x16)
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 #endif  // DYNDXT_LOADER_XBDM_ERR_H

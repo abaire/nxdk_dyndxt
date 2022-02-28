@@ -8,6 +8,9 @@ the system from booting fully.
 Intended for use with [xbdm_gdb_bridge](https://github.com/abaire/xbdm_gdb_bridge)'s
 `@bootstrap` command.
 
+A demonstration of how to build a DLL loadable by this loader can be found at
+[abaire/nxdk_demo_dyndxt](https://github.com/abaire/nxdk_demo_dyndxt)
+
 # git hooks
 
 This project uses [git hooks](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks)

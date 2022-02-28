@@ -82,6 +82,7 @@ add_library(
         src/dxtmain.c
         src/module_registry.c
         src/module_registry.h
+        src/nxdk_dxt_dll_main.h
         src/response_util.c
         src/response_util.h
         src/util.c
@@ -106,7 +107,7 @@ target_link_options(
         PUBLIC
         -Wl,-machine:i386
         -B ${NXDK_DIR}/bin
-        -Wl,-entry:DxtMain
+        -Wl,-entry:DXTMainCRTStartup@0
         -Wl,-dynamicbase
         -Wl,-fixed:no
         -Wl,-def:${CMAKE_CURRENT_SOURCE_DIR}/src/${TARGET}.dll.def
@@ -140,6 +141,8 @@ install(
 install(
         FILES
         src/command_processor_util.h
+        src/module_registry.h
+        src/nxdk_dxt_dll_main.h
         src/xbdm.h
         src/xbdm_err.h
         DESTINATION

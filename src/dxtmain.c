@@ -8,6 +8,7 @@
 #include "command_processor_util.h"
 #include "dll_loader.h"
 #include "module_registry.h"
+#include "nxdk_dxt_dll_main.h"
 #include "response_util.h"
 #include "util.h"
 #include "xbdm.h"
@@ -16,13 +17,14 @@
 static const char kHandlerName[] = "ddxt";
 static const uint32_t kTag = 0x64647874;  // 'ddxt'
 
+typedef HRESULT (*DXTMainProc)(void);
+
 typedef struct SendMethodAddressesContext {
   ModuleRegistryCursor cursor;
 } SendMethodAddressesContext;
 
-typedef HRESULT_API (*DxtMainProc)(void);
 typedef struct ReceiveImageDataContext {
-  DxtMainProc dxt_main;
+  DXTMainProc dxt_main;
   void *image_base;
   uint32_t raw_image_size;
   void *receive_pointer;
@@ -78,7 +80,7 @@ static HRESULT ReceiveImageDataComplete(ReceiveImageDataContext *ctx,
 static bool RegisterExport(const char *name, const char *alias,
                            uint32_t ordinal, uint32_t address);
 
-HRESULT_API DxtMain(void) {
+HRESULT DXTMain(void) {
   // Register methods exported by this DLL for use in DLLs to be loaded later.
   // Methods are registered for undecorated and __stdcall decorated versions of
   // the names to minimize dependencies on linker flags.
@@ -292,7 +294,7 @@ static HRESULT ReceiveImageDataComplete(ReceiveImageDataContext *receive_ctx,
     return XBOX_E_FAIL;
   }
 
-  DxtMainProc entrypoint = (DxtMainProc)ctx.output.entrypoint;
+  DXTMainProc entrypoint = (DXTMainProc)ctx.output.entrypoint;
   sprintf(response, "image_base=0x%X entrypoint=0x%X",
           (uint32_t)ctx.output.image, (uint32_t)entrypoint);
 
@@ -371,7 +373,7 @@ static HRESULT HandleInstall(const char *command, char *response,
 
   ReceiveImageDataContext *process_context =
       &context_store.receive_image_data_context;
-  process_context->dxt_main = (DxtMainProc)dxt_main;
+  process_context->dxt_main = (DXTMainProc)dxt_main;
   process_context->image_base = (void *)base;
   process_context->raw_image_size = length;
   process_context->receive_pointer = process_context->image_base;

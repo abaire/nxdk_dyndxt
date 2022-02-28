@@ -36,7 +36,7 @@ The CMake target can be configured to use the toolchain from the nxdk:
 # Building additional plugins
 
 The dyndxt_loader loader is intended to be used with DLLs that provide a
-`_DXTMain` entrypoint. The top level `CMakeLists.txt` builds the dyndxt_loader
+`DXTMain` entrypoint. The top level `CMakeLists.txt` builds the dyndxt_loader
 in this manner and can be used as a template.
 
 # Design
@@ -65,7 +65,7 @@ then updated to contain the results of the allocation for retrieval via
 
 ### Entrypoint mode: `io_val == 0`
 Calls the given nullary function, which is generally expected to be the
-`DxtMain` entrypoint after loading and relocating the loader DLL.
+`DXTMain` entrypoint after loading and relocating the loader DLL.
 
 ## Dynamic DXT Loader
 

@@ -27,7 +27,6 @@ typedef struct ReceiveImageDataContext {
   DXTMainProc dxt_main;
   void *image_base;
   uint32_t raw_image_size;
-  void *receive_pointer;
   uint32_t num_tls_callbacks;
   uint32_t *tls_callbacks;
   bool relocation_needed;
@@ -197,18 +196,12 @@ static HRESULT HandleDynamicLoad(const char *command, char *response,
   process_context->dxt_main = NULL;
   process_context->image_base = (void *)allocation;
   process_context->raw_image_size = size;
-  process_context->receive_pointer = process_context->image_base;
   process_context->num_tls_callbacks = 0;
   process_context->tls_callbacks = NULL;
   process_context->relocation_needed = true;
 
-  // TODO: Investigate whether the buffer can be used directly.
-  // It's unclear if there is any guarantee that the buffer will be entirely
-  // filled before calling the handler, or if it's safe to update the buffer
-  // pointer in the handler (e.g., simply advancing by data_size).
-  // If the buffer is not set here, a default buffer within xbdm is used.
-  //  ctx->buffer = (void *)base;
-  //  ctx->buffer_size = length;
+  ctx->buffer = (void *)allocation;
+  ctx->buffer_size = size;
   ctx->user_data = process_context;
   ctx->bytes_remaining = size;
   ctx->handler = ReceiveImageData;
@@ -314,9 +307,8 @@ static HRESULT_API ReceiveImageData(struct CommandContext *ctx, char *response,
     return XBOX_E_UNEXPECTED;
   }
 
-  memcpy(process_context->receive_pointer, ctx->buffer, ctx->data_size);
-  process_context->receive_pointer += ctx->data_size;
-
+  ctx->buffer += ctx->data_size;
+  ctx->buffer_size -= ctx->data_size;
   ctx->bytes_remaining -= ctx->data_size;
 
   if (ctx->bytes_remaining) {
@@ -376,18 +368,13 @@ static HRESULT HandleInstall(const char *command, char *response,
   process_context->dxt_main = (DXTMainProc)dxt_main;
   process_context->image_base = (void *)base;
   process_context->raw_image_size = length;
-  process_context->receive_pointer = process_context->image_base;
   process_context->num_tls_callbacks = 0;
   process_context->tls_callbacks = NULL;
   process_context->relocation_needed = false;
 
-  // TODO: Investigate whether the buffer can be used directly.
-  // It's unclear if there is any guarantee that the buffer will be entirely
-  // filled before calling the handler, or if it's safe to update the buffer
-  // pointer in the handler (e.g., simply advancing by data_size).
-  // If the buffer is not set here, a default buffer within xbdm is used.
-  //  ctx->buffer = (void *)base;
-  //  ctx->buffer_size = length;
+  ctx->buffer = (void *)base;
+  ctx->buffer_size = length;
+
   ctx->user_data = process_context;
   ctx->bytes_remaining = length;
   ctx->handler = ReceiveImageData;

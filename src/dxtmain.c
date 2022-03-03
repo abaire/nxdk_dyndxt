@@ -52,16 +52,18 @@ static HRESULT_API ProcessCommand(const char *command, char *response,
 static HRESULT HandleHello(const char *command, char *response,
                            DWORD response_len, struct CommandContext *ctx);
 
+// Loads a DLL image, relocates it, and invokes its entrypoint.
+static HRESULT HandleDynamicLoad(const char *command, char *response,
+                                 DWORD response_len,
+                                 struct CommandContext *ctx);
+
+#ifndef LEAN_BUILD
 // Registers a method exported by some module. E.g.,
 // "xboxkrnl.exe @ 1 (_AvGetSavedDataAddress@0) = 0x8003FE0E"
 static HRESULT HandleRegisterModuleExport(const char *command, char *response,
                                           DWORD response_len,
                                           struct CommandContext *ctx);
-
-// Loads a DLL image, relocates it, and invokes its entrypoint.
-static HRESULT HandleDynamicLoad(const char *command, char *response,
-                                 DWORD response_len,
-                                 struct CommandContext *ctx);
+#endif
 
 #ifndef LEAN_BUILD
 // Allocates a block of memory. Intended for use with the "install" command.
@@ -112,12 +114,15 @@ HRESULT DXTMain(void) {
 
   LinkLoadedModules();
 
+  DbgPrint("Registering DDXT command processor\n");
   return DmRegisterCommandProcessor(kHandlerName, ProcessCommand);
 }
 
 static HRESULT_API ProcessCommand(const char *command, char *response,
                                   DWORD response_len,
                                   struct CommandContext *ctx) {
+  DbgPrint("DDXT COMMAND: %s\n", command);
+
   const char *subcommand = command + sizeof(kHandlerName);
 
   if (!strncmp(subcommand, "hello", 5)) {
@@ -136,11 +141,11 @@ static HRESULT_API ProcessCommand(const char *command, char *response,
   if (!strncmp(subcommand, "install", 7)) {
     return HandleInstall(command + 7, response, response_len, ctx);
   }
-#endif
 
   if (!strncmp(subcommand, "export", 6)) {
     return HandleRegisterModuleExport(command + 6, response, response_len, ctx);
   }
+#endif
 
   return SetXBDMErrorWithSuffix(XBOX_E_UNKNOWN_COMMAND, "Unknown command ",
                                 command, response, response_len);
@@ -218,6 +223,8 @@ static HRESULT HandleDynamicLoad(const char *command, char *response,
   ctx->bytes_remaining = size;
   ctx->handler = ReceiveImageData;
 
+  DbgPrint("DLLLoad process started: expecting %d bytes\n", size);
+
   return XBOX_S_SEND_BINARY;
 }
 
@@ -256,6 +263,7 @@ static void *DLL_LOADER_API AllocateImage(size_t size) {
 
 static HRESULT ReceiveImageDataComplete(ReceiveImageDataContext *receive_ctx,
                                         char *response, DWORD response_len) {
+  DbgPrint("ReceiveImageDataComplete\n");
   if (!receive_ctx->relocation_needed) {
     // TODO: Call any TLS callbacks.
     receive_ctx->dxt_main();
@@ -275,6 +283,7 @@ static HRESULT ReceiveImageDataComplete(ReceiveImageDataContext *receive_ctx,
   ctx.input.resolve_import_by_ordinal = MRGetMethodByOrdinal;
   ctx.input.resolve_import_by_name = MRGetMethodByName;
 
+  DbgPrint("DLLLoad start\n");
   if (!DLLLoad(&ctx)) {
     sprintf(response, "DLLLoad failed %d::%d ", ctx.output.context,
             ctx.output.status);
@@ -286,10 +295,12 @@ static HRESULT ReceiveImageDataComplete(ReceiveImageDataContext *receive_ctx,
     DmFreePool(receive_ctx->image_base);
     return XBOX_E_FAIL;
   }
+  DbgPrint("DLLLoad DONE\n");
 
   // The raw image data is no longer needed.
   DmFreePool(receive_ctx->image_base);
 
+  DbgPrint("DLLInvokeTLSCallbacks start\n");
   if (!DLLInvokeTLSCallbacks(&ctx)) {
     sprintf(response, "Failed to invoke TLS callbacks %d::%d ",
             ctx.output.context, ctx.output.status);
@@ -300,12 +311,15 @@ static HRESULT ReceiveImageDataComplete(ReceiveImageDataContext *receive_ctx,
     DLLFreeContext(&ctx, false);
     return XBOX_E_FAIL;
   }
+  DbgPrint("DLLInvokeTLSCallbacks DONE\n");
 
   DXTMainProc entrypoint = (DXTMainProc)ctx.output.entrypoint;
   sprintf(response, "image_base=0x%X entrypoint=0x%X",
           (uint32_t)ctx.output.image, (uint32_t)entrypoint);
 
+  DbgPrint("Call entrypoint...\n");
   entrypoint();
+  DbgPrint("Done!\n");
   DLLFreeContext(&ctx, true);
 
   return XBOX_S_OK;
@@ -398,6 +412,7 @@ static HRESULT HandleInstall(const char *command, char *response,
 }
 #endif  // LEAN_BUILD
 
+#ifndef LEAN_BUILD
 static HRESULT HandleRegisterModuleExport(const char *command, char *response,
                                           DWORD response_len,
                                           struct CommandContext *ctx) {
@@ -487,6 +502,7 @@ static HRESULT HandleRegisterModuleExport(const char *command, char *response,
   DmFreePool(module_name_saved);
   return XBOX_S_OK;
 }
+#endif  // LEAN_BUILD
 
 static bool RegisterExport(const char *name, const char *alias,
                            uint32_t ordinal, uint32_t address) {

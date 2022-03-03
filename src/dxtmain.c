@@ -7,11 +7,15 @@
 
 #include "command_processor_util.h"
 #include "dll_loader.h"
+#include "link_loaded_modules.h"
 #include "module_registry.h"
 #include "nxdk_dxt_dll_main.h"
 #include "response_util.h"
 #include "util.h"
 #include "xbdm.h"
+
+// Omit optional/debug/experimental code to minimize size.
+#define LEAN_BUILD
 
 // Command that will be handled by this processor.
 static const char kHandlerName[] = "ddxt";
@@ -59,15 +63,19 @@ static HRESULT HandleDynamicLoad(const char *command, char *response,
                                  DWORD response_len,
                                  struct CommandContext *ctx);
 
+#ifndef LEAN_BUILD
 // Allocates a block of memory. Intended for use with the "install" command.
 // The all-in-one "load" command should be preferred for most cases.
 static HRESULT HandleReserve(const char *command, char *response,
                              DWORD response_len, struct CommandContext *ctx);
+#endif
 
+#ifndef LEAN_BUILD
 // Loads a pre-relocated DLL image and invokes its entrypoint.
 // The all-in-one "load" command should be preferred for most cases.
 static HRESULT HandleInstall(const char *command, char *response,
                              DWORD response_len, struct CommandContext *ctx);
+#endif
 
 static HRESULT_API SendMethodAddresses(struct CommandContext *ctx,
                                        char *response, DWORD response_len);
@@ -102,6 +110,8 @@ HRESULT DXTMain(void) {
   RegisterExport("MRGetMethodByName@12", "MRGetMethodByName", 11,
                  (uint32_t)MRGetMethodByName);
 
+  LinkLoadedModules();
+
   return DmRegisterCommandProcessor(kHandlerName, ProcessCommand);
 }
 
@@ -118,6 +128,7 @@ static HRESULT_API ProcessCommand(const char *command, char *response,
     return HandleDynamicLoad(command + 4, response, response_len, ctx);
   }
 
+#ifndef LEAN_BUILD
   if (!strncmp(subcommand, "reserve", 7)) {
     return HandleReserve(command + 7, response, response_len, ctx);
   }
@@ -125,6 +136,7 @@ static HRESULT_API ProcessCommand(const char *command, char *response,
   if (!strncmp(subcommand, "install", 7)) {
     return HandleInstall(command + 7, response, response_len, ctx);
   }
+#endif
 
   if (!strncmp(subcommand, "export", 6)) {
     return HandleRegisterModuleExport(command + 6, response, response_len, ctx);
@@ -209,6 +221,7 @@ static HRESULT HandleDynamicLoad(const char *command, char *response,
   return XBOX_S_SEND_BINARY;
 }
 
+#ifndef LEAN_BUILD
 static HRESULT HandleReserve(const char *command, char *response,
                              DWORD response_len, struct CommandContext *ctx) {
   CommandParameters cp;
@@ -235,6 +248,7 @@ static HRESULT HandleReserve(const char *command, char *response,
   sprintf(response, "addr=0x%X", (uint32_t)allocation);
   return XBOX_S_OK;
 }
+#endif
 
 static void *DLL_LOADER_API AllocateImage(size_t size) {
   return DmAllocatePoolWithTag(size, kTag);
@@ -318,6 +332,7 @@ static HRESULT_API ReceiveImageData(struct CommandContext *ctx, char *response,
   return ReceiveImageDataComplete(process_context, response, response_len);
 }
 
+#ifndef LEAN_BUILD
 static HRESULT HandleInstall(const char *command, char *response,
                              DWORD response_len, struct CommandContext *ctx) {
   CommandParameters cp;
@@ -381,6 +396,7 @@ static HRESULT HandleInstall(const char *command, char *response,
 
   return XBOX_S_SEND_BINARY;
 }
+#endif  // LEAN_BUILD
 
 static HRESULT HandleRegisterModuleExport(const char *command, char *response,
                                           DWORD response_len,

@@ -60,6 +60,20 @@ extern VOID_API DmFreePool(void *block);
 // Send a message to the notification channel.
 extern HRESULT_API DmSendNotificationString(const char *message);
 
+typedef PVOID PDM_WALK_MODULES;
+typedef struct DMN_MODLOAD {
+  char name[260];
+  void *base;
+  DWORD size;
+  DWORD timestamp;
+  DWORD checksum;
+  DWORD unknown_flags;
+} DMN_MODLOAD;
+
+extern HRESULT_API DmWalkLoadedModules(PDM_WALK_MODULES *ppdmwm,
+                                       DMN_MODLOAD *pdmml);
+extern HRESULT_API DmCloseLoadedModules(PDM_WALK_MODULES pdmwm);
+
 #ifdef __cplusplus
 };  // extern "C"
 #endif

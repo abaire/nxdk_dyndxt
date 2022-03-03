@@ -7,7 +7,7 @@
 #include "xbdm.h"
 #include "xbdm_err.h"
 
-// 'dmcp' - ddxt command processor
+// 'dxcp' - ddxt command processor
 static const uint32_t kTag = 0x64786370;
 
 static const char *FirstNonSpace(const char *input);

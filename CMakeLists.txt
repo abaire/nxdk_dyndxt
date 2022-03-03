@@ -80,6 +80,8 @@ add_library(
         src/command_processor_util.c
         src/command_processor_util.h
         src/dxtmain.c
+        src/link_loaded_modules.c
+        src/link_loaded_modules.h
         src/module_registry.c
         src/module_registry.h
         src/nxdk_dxt_dll_main.h

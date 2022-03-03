@@ -15,9 +15,6 @@ include(CheckSymbolExists)
 include (ExternalProject)
 include(FindPkgConfig)
 
-set(CMAKE_CXX_FLAGS_DEBUG "-g -Og")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-
 add_subdirectory(bootstrap)
 
 set(ddxt_bin_dir ${CMAKE_CURRENT_BINARY_DIR}/ddxt-bin)
@@ -96,6 +93,7 @@ target_compile_options(
         ${TARGET}
         PRIVATE
         -D DLLEXPORT
+        -O2
 )
 target_include_directories(
         ${TARGET}

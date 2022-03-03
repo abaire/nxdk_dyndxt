@@ -52,16 +52,18 @@ static HRESULT_API ProcessCommand(const char *command, char *response,
 static HRESULT HandleHello(const char *command, char *response,
                            DWORD response_len, struct CommandContext *ctx);
 
+// Loads a DLL image, relocates it, and invokes its entrypoint.
+static HRESULT HandleDynamicLoad(const char *command, char *response,
+                                 DWORD response_len,
+                                 struct CommandContext *ctx);
+
+#ifndef LEAN_BUILD
 // Registers a method exported by some module. E.g.,
 // "xboxkrnl.exe @ 1 (_AvGetSavedDataAddress@0) = 0x8003FE0E"
 static HRESULT HandleRegisterModuleExport(const char *command, char *response,
                                           DWORD response_len,
                                           struct CommandContext *ctx);
-
-// Loads a DLL image, relocates it, and invokes its entrypoint.
-static HRESULT HandleDynamicLoad(const char *command, char *response,
-                                 DWORD response_len,
-                                 struct CommandContext *ctx);
+#endif
 
 #ifndef LEAN_BUILD
 // Allocates a block of memory. Intended for use with the "install" command.
@@ -136,11 +138,11 @@ static HRESULT_API ProcessCommand(const char *command, char *response,
   if (!strncmp(subcommand, "install", 7)) {
     return HandleInstall(command + 7, response, response_len, ctx);
   }
-#endif
 
   if (!strncmp(subcommand, "export", 6)) {
     return HandleRegisterModuleExport(command + 6, response, response_len, ctx);
   }
+#endif
 
   return SetXBDMErrorWithSuffix(XBOX_E_UNKNOWN_COMMAND, "Unknown command ",
                                 command, response, response_len);
@@ -398,6 +400,7 @@ static HRESULT HandleInstall(const char *command, char *response,
 }
 #endif  // LEAN_BUILD
 
+#ifndef LEAN_BUILD
 static HRESULT HandleRegisterModuleExport(const char *command, char *response,
                                           DWORD response_len,
                                           struct CommandContext *ctx) {
@@ -487,6 +490,7 @@ static HRESULT HandleRegisterModuleExport(const char *command, char *response,
   DmFreePool(module_name_saved);
   return XBOX_S_OK;
 }
+#endif  // LEAN_BUILD
 
 static bool RegisterExport(const char *name, const char *alias,
                            uint32_t ordinal, uint32_t address) {

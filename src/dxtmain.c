@@ -339,6 +339,9 @@ static HRESULT_API ReceiveImageData(struct CommandContext *ctx, char *response,
   ctx->buffer_size -= ctx->data_size;
   ctx->bytes_remaining -= ctx->data_size;
 
+  DbgPrint("Received %d bytes of image data %d bytes remain\n", ctx->data_size,
+           ctx->bytes_remaining);
+
   if (ctx->bytes_remaining) {
     return XBOX_S_OK;
   }

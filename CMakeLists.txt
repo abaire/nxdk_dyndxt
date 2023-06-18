@@ -15,6 +15,9 @@ include(CheckSymbolExists)
 include (ExternalProject)
 include(FindPkgConfig)
 
+set(CMAKE_C_FLAGS_DEBUG "-g -Og -Wall")
+set(CMAKE_C_FLAGS_RELEASE "-Os -Wall")
+
 add_subdirectory(bootstrap)
 
 set(ddxt_bin_dir ${CMAKE_CURRENT_BINARY_DIR}/ddxt-bin)

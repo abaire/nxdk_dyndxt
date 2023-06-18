@@ -1,14 +1,14 @@
 #include "link_loaded_modules.h"
 
-#include <winapi/winnt.h>
-
 #include "module_registry.h"
 #include "util.h"
+#include "winapi/winnt.h"
 #include "xbdm.h"
 
-static const uint32_t kTag = 0x64786C6C;  // 'dxll'
+// static const uint32_t kTag = 0x64786C6C;  // 'dxll'
 
-static HRESULT RegisterModuleExports(const char *module_name, void *module_base) {
+static HRESULT RegisterModuleExports(const char *module_name,
+                                     void *module_base) {
   const uint8_t *image = (const uint8_t *)module_base;
   const uint8_t *read_ptr = image;
 
@@ -26,23 +26,29 @@ static HRESULT RegisterModuleExports(const char *module_name, void *module_base)
     return XBOX_E_TYPE_INVALID;
   }
 
-  const IMAGE_DATA_DIRECTORY *directory_info = (const IMAGE_DATA_DIRECTORY *)nt_header->OptionalHeader.DataDirectory + IMAGE_DIRECTORY_ENTRY_EXPORT;
+  const IMAGE_DATA_DIRECTORY *directory_info =
+      (const IMAGE_DATA_DIRECTORY *)nt_header->OptionalHeader.DataDirectory +
+      IMAGE_DIRECTORY_ENTRY_EXPORT;
   if (!directory_info->Size) {
     return XBOX_S_OK;
   }
 
-  const IMAGE_EXPORT_DIRECTORY *directory = (const IMAGE_EXPORT_DIRECTORY *)(image + directory_info->VirtualAddress);
+  const IMAGE_EXPORT_DIRECTORY *directory =
+      (const IMAGE_EXPORT_DIRECTORY *)(image + directory_info->VirtualAddress);
 
-  uint32_t *function_array = (uint32_t*)(image + directory->AddressOfFunctions);
+  uint32_t *function_array =
+      (uint32_t *)(image + directory->AddressOfFunctions);
   ModuleExport export = {0};
   for (uint32_t i = 0; i < directory->NumberOfFunctions; ++i) {
     export.ordinal = i + directory->Base;
 
     // TODO: Handle forwarded exports.
-    export.address = function_array[export.ordinal - directory->Base] + (intptr_t)module_base;
+    export.address = function_array[export.ordinal - directory->Base] +
+                     (intptr_t)module_base;
 
     if (!MRRegisterMethod(module_name, &export)) {
-      DbgPrint("Failed to register %s @ %d (%s)\n", module_name, export.ordinal, export.method_name ? export.method_name : "");
+      DbgPrint("Failed to register %s @ %d (%s)\n", module_name, export.ordinal,
+               export.method_name ? export.method_name : "");
       return XBOX_E_FAIL;
     }
   }
@@ -58,7 +64,8 @@ HRESULT LinkLoadedModules(void) {
   DMN_MODLOAD module_info;
 
   HRESULT ret = XBOX_S_OK;
-  while (DmWalkLoadedModules(&token, &module_info) == XBOX_S_OK && ret == XBOX_S_OK) {
+  while (DmWalkLoadedModules(&token, &module_info) == XBOX_S_OK &&
+         ret == XBOX_S_OK) {
     ret = RegisterModuleExports(module_info.name, module_info.base);
   }
   DmCloseLoadedModules(token);

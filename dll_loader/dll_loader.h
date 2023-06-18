@@ -4,7 +4,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <winapi/winnt.h>
+
+#include "winapi/winnt.h"
 
 #ifdef __cplusplus
 extern "C" {

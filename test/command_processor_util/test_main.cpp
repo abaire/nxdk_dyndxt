@@ -102,6 +102,8 @@ BOOST_AUTO_TEST_CASE(valueless_key_trailing_whitespace_ignored_test) {
   TEST_KEY(cp, 0, "test");
   TEST_VALUE_NULL(cp, 0);
 
+  BOOST_TEST(CPHasKey("test", &cp));
+
   CPDelete(&cp);
 }
 
@@ -113,6 +115,8 @@ BOOST_AUTO_TEST_CASE(single_valueless_key_test) {
   BOOST_TEST(cp.entries == 1);
   TEST_KEY(cp, 0, "test");
   TEST_VALUE_NULL(cp, 0);
+
+  BOOST_TEST(CPHasKey("test", &cp));
 
   CPDelete(&cp);
 }

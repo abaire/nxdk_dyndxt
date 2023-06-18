@@ -1,0 +1,114 @@
+name: Build
+
+on:
+  push:
+    paths-ignore:
+      - '.github/**'
+      - '!.github/workflows/**'
+      - 'README.md'
+  pull_request:
+    paths-ignore:
+      - '.github/**'
+      - '!.github/workflows/**'
+      - 'README.md'
+
+jobs:
+  BuildLinux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone tree
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          path: nxdk_dyndxt
+      - name: Clone nxdk
+        uses: actions/checkout@v3
+        with:
+          repository: XboxDev/nxdk
+          ref: 500354ef264f35a46a31643876b06ed614b0aed8
+          submodules: recursive
+          path: nxdk
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            libboost-all-dev \
+            libsdl2-dev \
+            libsdl2-image-dev \
+            llvm \
+            lld \
+            nasm
+      - name: Precompile nxdk
+        run: |
+          echo "Precompiling nxdk to allow CMake to run correctly."
+          cd nxdk
+          eval $(./bin/activate -s)
+          for dir in samples/*/ ; do
+            pushd "${dir}"
+            make -j$(grep -c processor /proc/cpuinfo)
+            popd
+          done
+      - name: Compile
+        run: |
+          cd nxdk_dyndxt
+          export NXDK_DIR="${GITHUB_WORKSPACE}/nxdk"
+          export CMAKE_OPTS="-DCMAKE_TOOLCHAIN_FILE=${NXDK_DIR}/share/toolchain-nxdk.cmake"
+          cmake -B build -DCMAKE_BUILD_TYPE=Release "${CMAKE_OPTS}"
+          cmake --build build -- -j$(grep -c processor /proc/cpuinfo)
+      - name: Test
+        run: |
+          cd nxdk_dyndxt
+          ctest --test-dir build --output-on-failure
+
+  BuildMacOS:
+    name: Build macOS
+    runs-on: macOS-latest
+    steps:
+      - name: Clone tree
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          path: nxdk_dyndxt
+      - name: Clone nxdk
+        uses: actions/checkout@v3
+        with:
+          repository: XboxDev/nxdk
+          ref: 500354ef264f35a46a31643876b06ed614b0aed8
+          submodules: recursive
+          path: nxdk
+      - name: Install dependencies
+        run: |
+          export HOMEBREW_NO_AUTO_UPDATE=1
+          export HOMEBREW_NO_INSTALL_CLEANUP=1
+          brew install \
+            cmake \
+            coreutils \
+            boost \
+            llvm \
+            sdl2 \
+            sdl2_image \
+            nasm
+      - name: Precompile nxdk
+        run: |
+          echo "Precompiling nxdk to allow CMake to run correctly."
+          cd nxdk
+          eval $(./bin/activate -s)
+          for dir in samples/*/ ; do
+            pushd "${dir}"
+            make -j
+            popd
+          done
+      - name: Compile
+        run: |
+          cd nxdk_dyndxt
+          export PATH="$(brew --prefix llvm)/bin:$PATH"
+          export NXDK_DIR="${GITHUB_WORKSPACE}/nxdk"
+          export CMAKE_OPTS="-DCMAKE_TOOLCHAIN_FILE=${NXDK_DIR}/share/toolchain-nxdk.cmake"
+          cmake -B build -DCMAKE_BUILD_TYPE=Release "${CMAKE_OPTS}"
+          cmake --build build -- -j
+      - name: Test
+        run: |
+          cd nxdk_dyndxt
+          ctest --test-dir build --output-on-failure

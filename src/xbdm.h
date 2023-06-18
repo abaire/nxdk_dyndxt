@@ -37,12 +37,28 @@ typedef HRESULT_API_PTR(ProcessorProc)(const char *command, char *response,
 typedef HRESULT_API_PTR(ContinuationProc)(struct CommandContext *ctx,
                                           char *response, DWORD response_len);
 
+//! Contains contextual information used when a debug command processor needs to
+//! do something more than immediately reply with a simple, short response.
 typedef struct CommandContext {
+  //! Function to be invoked to actually send or receive data. This function
+  //! will be called repeatedly until `bytes_remaining` is set to 0.
   ContinuationProc handler;
+  //! When receiving data, this will be set to the number of bytes in `buffer`
+  //! that contain valid received data. When sending data, this must be set by
+  //! the debug processor to the number of valid bytes in `buffer` that should
+  //! be sent.
   DWORD data_size;
+  //! Buffer used to hold send/receive data. XBDM will create a small buffer by
+  //! default, this can be reassigned to an arbitrary buffer allocated by the
+  //! debug processor, provided it is cleaned up.
   void *buffer;
+  //! The size of `buffer` in bytes.
   DWORD buffer_size;
+  //! Arbitrary data defined by the command processor.
   void *user_data;
+  //! Used when sending a chunked response, indicates the number of bytes
+  //! remaining to be sent. `handler` will be called repeatedly until this is
+  //! set to 0, indicating completion of the send.
   DWORD bytes_remaining;
 } __attribute__((packed)) CommandContext;
 

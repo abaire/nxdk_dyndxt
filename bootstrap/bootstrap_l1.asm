@@ -29,7 +29,7 @@ bootstrap:
     ; The address of DmAllocatePoolWithTag or the loader entrypoint.
     mov edx, dword [ebp+8]
 
-    relocate_address ecx, io_address
+    RELOCATE_ADDRESS ecx, io_address
     push ecx
 
     ; Check to see if this is attempting to allocate memory or just call the
@@ -37,7 +37,7 @@ bootstrap:
     cmp dword [ecx], 0x00000000
     jz call_entrypoint
 
-    ; DmAllocatePoolWithTag(BOOTSTRAP_STAGE_2_SIZE, <size>);
+    ; DmAllocatePoolWithTag(<size>, DYNAMIC_DXT_POOL);
     push DYNAMIC_DXT_POOL
     push dword [ecx]
 

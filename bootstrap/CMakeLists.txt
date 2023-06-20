@@ -10,7 +10,7 @@ unset(_CMAKE_PROCESSING_LANGUAGE)
 
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 set(CMAKE_SYSTEM_NAME WindowsStore)
-set(CMAKE_SYSTEM_PROCESSOR i686)
+set(CMAKE_SYSTEM_PROCESSOR i386)
 
 set(
         GENERATE_RAW_BINARY
@@ -34,6 +34,21 @@ set_source_files_properties(${L1BOOTSTRAP_SOURCES} PROPERTIES LANGUAGE ASM_NASM)
 add_library(bootstrap_l1 STATIC EXCLUDE_FROM_ALL ${L1BOOTSTRAP_SOURCES})
 set_target_properties(
         bootstrap_l1
+        PROPERTIES
+        RULE_LAUNCH_LINK "${GENERATE_RAW_BINARY}"
+        COMPILE_FLAGS "-I ${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
+# L2 bootstrap ---------------------------------------
+set(
+        L2BOOTSTRAP_SOURCES
+        bootstrap_l2.asm
+)
+
+set_source_files_properties(${L2BOOTSTRAP_SOURCES} PROPERTIES LANGUAGE ASM_NASM)
+add_library(bootstrap_l2 STATIC EXCLUDE_FROM_ALL ${L2BOOTSTRAP_SOURCES})
+set_target_properties(
+        bootstrap_l2
         PROPERTIES
         RULE_LAUNCH_LINK "${GENERATE_RAW_BINARY}"
         COMPILE_FLAGS "-I ${CMAKE_CURRENT_SOURCE_DIR}"

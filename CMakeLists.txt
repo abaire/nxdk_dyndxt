@@ -67,8 +67,7 @@ make_import_lib(
         ${CMAKE_CURRENT_SOURCE_DIR}/src/xbdm.dll.def
 )
 
-
-# Loader executable ------------------------------------
+# Loader library ---------------------------------------
 
 set(TARGET dynamic_dxt_loader)
 
@@ -125,6 +124,7 @@ add_dependencies(
         ${TARGET}
         xbdm_lib
         bootstrap_l1
+        bootstrap_l2
 )
 
 install(
@@ -136,6 +136,7 @@ install(
 install(
         FILES
         ${CMAKE_CURRENT_BINARY_DIR}/bootstrap_l1.asm.obj
+        ${CMAKE_CURRENT_BINARY_DIR}/bootstrap_l2.asm.obj
         ${CMAKE_CURRENT_BINARY_DIR}/libdynamic_dxt_loader.lib
         ${CMAKE_CURRENT_BINARY_DIR}/xbdm.lib
         DESTINATION

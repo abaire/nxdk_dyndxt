@@ -118,11 +118,18 @@ strcpy:
 
 ; ===========================================================================
 ; int32_t parse_integer(char **esi)
-;   Parses the string in [esi] as a positive integer value.
-;   esi is incremented to point at the first non-integer character.
+;   Parses the string in [esi] as a positive hex value, prefixed with 0x.
+;   esi is incremented to point at the first non-integer character. If esi is
+;   not incremented, the value is not a valid hex integer.
 ;
 ; Trashes: eax, ecx, esi
 parse_integer:
+    ; Check that the number starts with 0x
+    mov cx, word [esi]
+    cmp cx, '0x'
+    jne .done
+    add esi, 2
+
     xor eax, eax
     xor ecx, ecx
 
@@ -135,10 +142,29 @@ parse_integer:
     jl .done
 
     cmp ecx, '9'
-    jg .done
-
-    imul eax, 10
+    jg .hex
     sub ecx, '0'
+    jmp .accumulate
+
+.hex:
+    cmp ecx, 'A'
+    jl .done
+
+    cmp ecx, 'F'
+    jg .lowercase_hex
+    sub ecx, 'A' - 10
+    jmp .accumulate
+
+.lowercase_hex:
+    cmp ecx, 'a'
+    jl .done
+
+    cmp ecx, 'f'
+    jg .lowercase_hex
+    sub ecx, 'a' - 10
+
+.accumulate:
+    shl eax, 4
     add eax, ecx
 
     inc esi
@@ -334,6 +360,7 @@ ProcessCommand:
     push ecx
     push dword [ebp + 12]
     call strcpy
+    jmp .fail
 
 .fail_usage_install:
     RELOCATE_ADDRESS ecx, g_message_usage_install
@@ -425,8 +452,8 @@ g_entrypoint_arg            DB ENTRYPOINT_ARG, 0
 g_message_install_failed    DB 'Install failed', 0
 g_message_out_of_memory     DB 'Out of memory', 0
 g_message_ok                DB MESSAGE_OK, 0
-g_message_usage_alloc       DB 'Usage "a s=<size_base10>"', 0
-g_message_usage_install     DB 'Usage "i e=<entrypoint_base10>"', 0
+g_message_usage_alloc       DB 'Usage "a s=<size_hex>"', 0
+g_message_usage_install     DB 'Usage "i e=<entrypoint_hex>"', 0
 g_handler_name              DB 'ldxt', 0
 
 ; Reserve space for the import table.

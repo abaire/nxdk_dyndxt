@@ -11,6 +11,10 @@
 %define S_BINARY DEF_SUCCESS(0x03)
 %define S_SEND_BINARY DEF_SUCCESS(0x04)
 
+; Used to terminate binary data transfers, prefixed with S as it's an expected
+; termination condition rather than a typical error.
+%define S_NO_MORE_DATA DEF_ERROR(0x104)
+
 %define E_UNEXPECTED DEF_ERROR(0x00)
 %define E_MAX_CONNECTIONS_EXCEEDED DEF_ERROR(0x01)
 %define E_FILE_NOT_FOUND DEF_ERROR(0x02)

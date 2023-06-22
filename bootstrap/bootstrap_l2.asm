@@ -221,6 +221,64 @@ g_hex_chars                 DB '0123456789abcdef'
 
 
 ; ===========================================================================
+; parse_arg
+;  Inputs:
+;    esi: The input buffer to parse
+;    ecx: The argument specifier
+;
+;  Returns:
+;    eax: The parsed value
+;    ecx: 0 if an argument was successfully parsed
+;
+;  Trashes:
+;    eax, ecx, esi (incremented past the entire argument on match.)
+parse_arg:
+    push esi
+
+    repe cmpsb
+    jne .arg_mismatch
+
+    test ecx, ecx
+    jne .arg_mismatch
+
+    pop eax  ; Discard esi, the arg matched and should be consumed.
+    push esi
+    call parse_integer
+
+    pop ecx  ; Check that esi was incremented.
+    test edi, ecx
+    jz .bad_value
+
+    xor ecx, ecx  ; Clear ecx to flag success
+    jmp .done
+
+.bad_value:
+    mov ecx, 1
+    jmp .done
+
+.arg_mismatch:
+    mov ecx, 1
+    pop esi
+
+.done:
+    ret
+
+%defstr BASE_ARG            b=
+%strlen BASE_ARG_LEN        BASE_ARG
+g_base_arg                  DB BASE_ARG, 0
+
+%defstr ORDINAL_ARG         o=
+%strlen ORDINAL_ARG_LEN     ORDINAL_ARG
+g_ordinal_arg               DB ORDINAL_ARG, 0
+
+%defstr SIZE_ARG            s=
+%strlen SIZE_ARG_LEN        SIZE_ARG
+g_size_arg                  DB SIZE_ARG, 0
+%defstr ENTRYPOINT_ARG      e=
+%strlen ENTRYPOINT_ARG_LEN  ENTRYPOINT_ARG
+g_entrypoint_arg            DB ENTRYPOINT_ARG, 0
+
+; ===========================================================================
 ; HRESULT_API ProcessCommand(const char *command,
 ;                            char *response,
 ;                            DWORD response_len,
@@ -230,6 +288,7 @@ ProcessCommand:
     mov ebp, esp
     push esi
     push edi
+    push ebx
 
     mov esi, [ebp + 8]
     add esi, 5  ; Skip "ldxt!"
@@ -239,30 +298,114 @@ ProcessCommand:
     je .HandleInstall
 
     cmp al, 'a'
+    je .HandleAlloc
+
+    cmp al, 'r'
     jne .invalid_command
 
+.HandleResolve:
+    ; Resolve one or more module exports.
+    inc esi  ; Skip the 'r' command and move to the args.
+
+    ; Optimistically construct the CommandContext.
+    push DYNAMIC_DXT_POOL
+    push 4 * 128
+    RELOCATE_ADDRESS ecx, DmAllocatePoolWithTag
+    call [ecx]
+
+    mov edx, [ebp + 20]
+    mov ebx, eax
+    mov [edx + CommandContext.user_data], eax
+    mov [edx + CommandContext.buffer], eax
+    mov [edx + CommandContext.buffer_size], dword 4 * 128
+    mov [edx + CommandContext.bytes_remaining], dword 0
+
+.loop_base_or_ordinal:
+    RELOCATE_ADDRESS edi, g_base_arg
+    mov ecx, BASE_ARG_LEN
+    call parse_arg
+
+    test ecx, ecx
+    jnz .read_ordinal
+
+    ; edx = image_base
+    mov edx, eax
+
+.check_space:
+    mov cl, byte [esi]
+    cmp cl, ' '
+    jne .check_end
+
+.skip_space:
+    inc esi
+    jmp .loop_base_or_ordinal
+
+.read_ordinal:
+    test edx, edx ; Check that some base > 0 was previously given.
+    jz .free_buffer_and_fail_usage_resolve
+
+    RELOCATE_ADDRESS edi, g_ordinal_arg
+    mov ecx, ORDINAL_ARG_LEN
+
+    call parse_arg
+    test ecx, ecx
+    jnz .free_buffer_and_fail_usage_resolve
+
+    ; Ordinals must be > 0
+    test eax, eax
+    jz .free_buffer_and_fail_usage_resolve
+
+    call GetExportAddress
+    add ebx, 4
+
+    ; Increment bytes_remaining past the new value
+    mov ecx, [ebp + 20]
+    mov eax, [ecx + CommandContext.bytes_remaining]
+    add eax, 4
+    mov [ecx + CommandContext.bytes_remaining], eax
+
+    jmp .check_space
+
+.check_end:
+    test cl, cl  ; ecx must be set to [esi]
+    jnz .free_buffer_and_fail_usage_resolve
+
+    mov edx, [ebp + 20]
+    ; Set ctx->handler to the SendResolvedExports proc.
+    RELOCATE_ADDRESS ecx, SendResolvedExports
+    mov [edx + CommandContext.handler], ecx
+
+    mov eax, S_BINARY
+    jmp .end
+
+.free_buffer_and_fail_usage_resolve:
+
+    ; Free the optimistically allocated buffer
+    mov edx, [ebp + 20]
+    mov ecx, [edx + CommandContext.user_data]
+    push ecx
+    RELOCATE_ADDRESS ecx, DmFreePool
+    call [ecx]
+
+    ; Null out the CommandContext
+    mov edx, [ebp + 20]
+    mov [edx + CommandContext.user_data], dword 0
+    mov [edx + CommandContext.buffer], dword 0
+    mov [edx + CommandContext.buffer_size], dword 0
+    mov [edx + CommandContext.bytes_remaining], dword 0
+
+    jmp .fail_usage_resolve
+
 .HandleAlloc:
-    add esi, 1  ; Skip the 'a' command and move to the args.
-
-    %defstr SIZE_ARG         s=
-    %strlen SIZE_ARG_LEN     SIZE_ARG
-
+    ; Allocate space on the debug heap for a future HandleInstall command.
+    inc esi  ; Skip the 'a' command and move to the args.
     RELOCATE_ADDRESS edi, g_size_arg
     mov ecx, SIZE_ARG_LEN
-    repe cmpsb
-    jne .fail_usage_alloc
+    call parse_arg
+
     test ecx, ecx
+    jnz .fail_usage_alloc
 
-    je .parse_size
-    jmp .fail_usage_alloc
-
-.parse_size:
-    push esi
-    call parse_integer
-
-    pop edi  ; Check that esi was incremented.
-    test edi, esi
-    jz .fail_usage_alloc
     test eax, eax ; Check that some value > 0 was given.
     jz .fail_usage_alloc
 
@@ -301,27 +444,16 @@ ProcessCommand:
     jmp .end
 
 .HandleInstall:
+    ; Install the given binary payload and call the DxtMain at the given addr.
+    inc esi  ; Skip the 'i' command and move to the args.
 
-    add esi, 1  ; Skip the 'i' command and move to the args.
-
-    %defstr ENTRYPOINT_ARG         e=
-    %strlen ENTRYPOINT_ARG_LEN     ENTRYPOINT_ARG
     RELOCATE_ADDRESS edi, g_entrypoint_arg
     mov ecx, ENTRYPOINT_ARG_LEN
-    repe cmpsb
-    jne .fail_usage_install
+    call parse_arg
+
     test ecx, ecx
+    jnz .fail_usage_install
 
-    je .parse_entrypoint
-    jmp .fail_usage_install
-
-.parse_entrypoint:
-    push esi
-    call parse_integer
-
-    pop edi  ; Check that esi was incremented.
-    test edi, esi
-    jz .fail_usage_install
     test eax, eax ; Check that some value > 0 was given.
     jz .fail_usage_install
 
@@ -355,6 +487,13 @@ ProcessCommand:
     mov eax, E_ACCESS_DENIED
     jmp .end
 
+.fail_usage_resolve:
+    RELOCATE_ADDRESS ecx, g_message_usage_resolve
+    push ecx
+    push dword [ebp + 12]
+    call strcpy
+    jmp .fail
+
 .fail_usage_alloc:
     RELOCATE_ADDRESS ecx, g_message_usage_alloc
     push ecx
@@ -376,11 +515,48 @@ ProcessCommand:
     mov eax, E_UNKNOWN_COMMAND
 
 .end:
+    pop ebx
     pop edi
     pop esi
     mov esp, ebp
     pop ebp
     ret 16
+
+; ===========================================================================
+; HRESULT_API SendResolvedExports(struct CommandContext *ctx,
+;                                 char *response,
+;                                 DWORD response_len)
+SendResolvedExports:
+    push ebp
+    mov ebp, esp
+
+    mov edx, [ebp + 8]
+    mov ecx, [edx + CommandContext.bytes_remaining]
+    test ecx, ecx
+    jz .done
+
+    ; Set data_size to bytes_remaining, the entire buffer can be sent.
+    mov [edx + CommandContext.data_size], ecx
+    mov [edx + CommandContext.bytes_remaining], dword 0
+
+    mov eax, S_OK
+    jmp .end
+
+.done:
+    ; Free the allocated buffer.
+    mov edx, [ebp + 8]
+    mov [edx + CommandContext.data_size], dword 0
+    mov ecx, [edx + CommandContext.user_data]
+    push ecx
+    RELOCATE_ADDRESS ecx, DmFreePool
+    call [ecx]
+
+    mov eax, S_NO_MORE_DATA
+
+.end:
+    mov esp, ebp
+    pop ebp
+    ret 12
 
 
 ; ===========================================================================
@@ -441,21 +617,93 @@ ReceiveImageData:
     ret 12
 
 
+; ===========================================================================
+; GetExportAddress
+;  Resolves an export and stores the resolved address into [ebx].
+;  Assumes that ordinal and base are both > 0
+;
+;  Inputs:
+;    edx: The base of the image.
+;    eax: The ordinal of the export to resolve.
+;
+;  Returns:
+;    eax: 0 if the export was successfully resolved.
+;
+;  Trashes:
+;    eax, ecx
+GetExportAddress:
+    push edi
+    push esi
+    ; Get the PE header pointer.
+    %define kPEHeaderPointer    0x3C
+    mov ecx, edx
+    add ecx, kPEHeaderPointer
+
+    ; Get the offset of the export table from the base.
+    %define kExportTableOffset  0x78
+    mov ecx, [ecx]
+    add ecx, edx
+    add ecx, kExportTableOffset
+
+    ; edi = export_table_base
+    mov edi, edx
+    add edi, [ecx]
+
+    ; esi = export_count
+    %define kExportNumFunctionsOffset   0x14
+    mov ecx, edi
+    add ecx, kExportNumFunctionsOffset
+    mov esi, [ecx]
+
+    ; eax = index into the table (the ordinal - 1)
+    dec eax
+    cmp eax, esi
+    jge .invalid_ordinal
+
+    %define kExportDirectoryAddressOfFunctionsOffset    0x1C
+    mov ecx, edi
+    add ecx, kExportDirectoryAddressOfFunctionsOffset
+
+    ; esi = &function_address
+    mov esi, [ecx]
+    add esi, edx
+    shl eax, 2
+    add esi, eax
+
+    ; eax = function_address
+    mov eax, [esi]
+    add eax, edx
+
+    ; *ebx = function_address, eax = 0
+    mov [ebx], eax
+    xor eax, eax
+    jmp .end
+
+.invalid_ordinal
+    mov eax, 1
+    mov [ebx], dword 0
+
+.end
+    pop esi
+    pop edi
+    ret
+
+
 section .data
 align 4
 
 g_image:                    DD 0  ; The received loader image.
 g_image_entrypoint:         DD 0  ; The DXTMain function within the loaded image.
 
-g_size_arg                  DB SIZE_ARG, 0
-g_entrypoint_arg            DB ENTRYPOINT_ARG, 0
 g_message_install_failed    DB 'Install failed', 0
 g_message_out_of_memory     DB 'Out of memory', 0
 g_message_ok                DB MESSAGE_OK, 0
+g_message_usage_resolve     DB 'Usage "r [b=<base_hex> [o=<ordinal>]]"', 0
 g_message_usage_alloc       DB 'Usage "a s=<size_hex>"', 0
 g_message_usage_install     DB 'Usage "i e=<entrypoint_hex>"', 0
 g_handler_name              DB 'ldxt', 0
 
 ; Reserve space for the import table.
+DmFreePool                  DD 0
 DmAllocatePoolWithTag       DD 0
 DmRegisterCommandProcessor  DD 0

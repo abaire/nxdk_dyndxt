@@ -679,11 +679,11 @@ GetExportAddress:
     xor eax, eax
     jmp .end
 
-.invalid_ordinal
+.invalid_ordinal:
     mov eax, 1
     mov [ebx], dword 0
 
-.end
+.end:
     pop esi
     pop edi
     ret

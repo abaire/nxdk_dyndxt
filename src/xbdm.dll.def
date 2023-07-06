@@ -8,6 +8,7 @@ EXPORTS
     DmFreePool@4                            @9      NONAME
     DmHaltThread@4                          @20     NONAME
     DmRegisterCommandProcessor@8            @30     NONAME
+    DmRegisterCommandProcessorEx@12         @72     NONAME
     DmResumeThread@4                        @35     NONAME
     DmSendNotificationString@4              @36     NONAME
     DmSuspendThread@4                       @48     NONAME

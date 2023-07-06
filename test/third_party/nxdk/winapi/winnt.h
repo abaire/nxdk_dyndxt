@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include <xboxkrnl/xboxdef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef LONG HRESULT;
 
 typedef CHAR *LPSTR;
@@ -293,5 +297,17 @@ typedef struct _XBE_FILE_HEADER {
 
 #define XBE_DEFAULT_BASE (0x10000)
 #define CURRENT_XBE_HEADER ((PXBE_FILE_HEADER)XBE_DEFAULT_BASE)
+
+typedef struct _SECURITY_ATTRIBUTES {
+  DWORD nLength;
+  LPVOID lpSecurityDescriptor;
+  BOOL bInheritHandle;
+} SECURITY_ATTRIBUTES, *PSECURITY_ATTRIBUTES, *LPSECURITY_ATTRIBUTES;
+
+typedef DWORD (*LPTHREAD_START_ROUTINE)(LPVOID lpThreadParameter);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 #endif

@@ -15,11 +15,13 @@ extern "C" {
 #define VOID_API void __attribute__((stdcall))
 #define PVOID_API void *__attribute__((stdcall))
 #define X_API_PTR(ret, n) ret(__attribute__((stdcall)) * (n))
+#define HANDLE_API HANDLE __attribute__((stdcall))
 #else
 #define HRESULT_API HRESULT
 #define VOID_API void
 #define PVOID_API void *
 #define X_API_PTR(ret, n) ret(*(n))
+#define HANDLE_API HANDLE
 #endif  // #ifdef _WIN32
 
 #define HRESULT_API_PTR(n) X_API_PTR(HRESULT, (n))
@@ -65,6 +67,21 @@ typedef struct CommandContext {
 // Register a new processor for commands with the given prefix.
 extern HRESULT_API DmRegisterCommandProcessor(const char *prefix,
                                               ProcessorProc proc);
+
+//! A function that may be invoked by DmRegisterCommandProcessorEx to create a
+//! dedicated handler thread.
+typedef HANDLE_API (*CreateThreadFunc)(LPSECURITY_ATTRIBUTES lpThreadAttributes,
+                                       SIZE_T dwStackSize,
+                                       LPTHREAD_START_ROUTINE lpStartAddress,
+                                       LPVOID lpParameter,
+                                       DWORD dwCreationFlags,
+                                       LPDWORD lpThreadId);
+
+// Register a new processor for commands with the given prefix, running in a
+// dedicated thread created with the given `create_thread_func`.
+extern HRESULT_API DmRegisterCommandProcessorEx(
+    const char *prefix, ProcessorProc proc,
+    CreateThreadFunc create_thread_func);
 
 // Allocate a new block of memory with the given tag.
 extern PVOID_API DmAllocatePoolWithTag(DWORD size, DWORD tag);

@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.18)
 project(dyndxt_loader)
 
+option(BUILD_TESTING "Build the tests for this project" ON)
+
 set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
 set(CMAKE_SHARED_LIBRARY_SUFFIX ".dll")
 set(CMAKE_SHARED_LIBRARY_SUFFIX_C ".dll")
@@ -12,7 +14,7 @@ set(CMAKE_CXX_STANDARD 17)
 include(CMakePushCheckState)
 set(_CMAKE_PROCESSING_LANGUAGE "C")
 include(CheckSymbolExists)
-include (ExternalProject)
+include(ExternalProject)
 include(FindPkgConfig)
 
 set(CMAKE_C_FLAGS_DEBUG "-g -Og -Wall")
@@ -21,15 +23,18 @@ set(CMAKE_C_FLAGS_RELEASE "-Os -Wall")
 add_subdirectory(bootstrap)
 
 set(ddxt_bin_dir ${CMAKE_CURRENT_BINARY_DIR}/ddxt-bin)
-ExternalProject_Add(
-        dyndxt_loader_tests
-        PREFIX dyndxt_loader_tests
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/test
-        BINARY_DIR dyndxt_loader_tests
-        INSTALL_COMMAND ""
-        EXCLUDE_FROM_ALL FALSE
-        BUILD_ALWAYS TRUE
-)
+
+if (BUILD_TESTING)
+    ExternalProject_Add(
+            dyndxt_loader_tests
+            PREFIX dyndxt_loader_tests
+            SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/test
+            BINARY_DIR dyndxt_loader_tests
+            INSTALL_COMMAND ""
+            EXCLUDE_FROM_ALL FALSE
+            BUILD_ALWAYS TRUE
+    )
+endif ()
 
 
 # Link libraries ------------------------------------

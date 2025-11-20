@@ -86,10 +86,12 @@ jobs:
             cmake \
             coreutils \
             boost \
-            llvm \
+            llvm@18 \
             sdl2 \
             sdl2_image \
             nasm
+      - name: Configure environment (macOS)
+        run: echo "PATH=$(brew --prefix llvm@18)/bin:$PATH" >> $GITHUB_ENV            
       - name: Precompile nxdk
         run: |
           echo "Precompiling nxdk to allow CMake to run correctly."

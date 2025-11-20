@@ -16,7 +16,6 @@ find_package(
         unit_test_framework
         REQUIRED
 )
-include_directories("${Boost_INCLUDE_DIR}")
 
 # Tests ----------------------------------------------
 

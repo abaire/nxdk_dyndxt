@@ -38,15 +38,10 @@ endif ()
 
 
 # Link libraries ------------------------------------
+find_program(CMAKE_DLLTOOL NAMES dlltool llvm-dlltool)
 if (NOT CMAKE_DLLTOOL)
-    FIND_PROGRAM(CMAKE_DLLTOOL dlltool CMAKE_FIND_ROOT_PATH_BOTH)
-    if (NOT CMAKE_DLLTOOL)
-        FIND_PROGRAM(CMAKE_DLLTOOL llvm-dlltool CMAKE_FIND_ROOT_PATH_BOTH)
-    ENDIF ()
-    if (NOT CMAKE_DLLTOOL)
-        MESSAGE(FATAL_ERROR "Could not find dlltool command")
-    ENDIF ()
-ENDIF ()
+    message(FATAL_ERROR "Could not find dlltool. Please specify it with -DCMAKE_DLLTOOL=...")
+endif()
 
 function(make_import_lib target_name output def_file)
     add_custom_command(
